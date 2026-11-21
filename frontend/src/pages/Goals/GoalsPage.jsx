@@ -128,7 +128,8 @@ const GoalCard = ({ goal, onDeposit, onEdit, onDelete }) => {
       <div>
         <ProgressBar current={goal.currentAmount} target={goal.targetAmount} status={goal.status} />
         <div className="flex justify-between text-sm mt-2 font-amount">
-          <span className="text-cyan-100">{formatPeso(goal.currentAmount)}</span>
+          <span className="text-cyan-400">{formatPeso(goal.currentAmount)}</span>
+
           <span className="text-slate-400">{formatPeso(goal.targetAmount)}</span>
         </div>
       </div>

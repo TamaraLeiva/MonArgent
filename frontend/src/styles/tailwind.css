@@ -179,12 +179,15 @@
 .light .bg-\[\#102744\],
 .light .bg-\[\#102946\],
 .light .bg-\[\#0b2034\],
+.light .bg-\[\#0b2034\]\/40,
 .light .bg-\[\#0f2440\],
 .light .bg-\[\#1a3457\],
 .light .bg-\[\#132a4a\],
+.light .bg-\[\#132a4a\]\/40,
 .light .bg-\[\#173459\],
 .light .bg-\[\#2d4667\],
 .light .bg-\[\#162238\] { background-color: #ffffff !important; }
+
 
 
 
@@ -196,12 +199,15 @@
 .light .border-\[\#234063\]\/50,
 .light .border-\[\#26415f\],
 .light .border-\[\#284567\],
+.light .border-\[\#284567\]\/60,
+.light .border-\[\#284567\]\/40,
 .light .border-\[\#2c496d\],
 .light .border-\[\#2a4466\],
 .light .border-\[\#274466\],
 .light .border-\[\#203d60\],
 .light .border-\[\#2b4b72\],
 .light .border-slate-700\/60 { border-color: #d7e1ec !important; }
+
 
 
 .light .text-slate-100,
@@ -226,14 +232,25 @@
 .light .bg-\[\#2e4c72\] { background-color: #dbe7f3 !important; }
 .light .bg-slate-800,
 .light .bg-slate-800\/40,
+.light .bg-slate-800\/50,
+.light .bg-slate-800\/60,
 .light .bg-slate-700,
 .light .bg-slate-700\/50,
 .light .bg-slate-700\/40 { background-color: #f1f5f9 !important; }
+
 .light .border-slate-700,
 .light .border-slate-600 { border-color: #d7e1ec !important; }
 
 .light select, .light input, .light textarea { color: #172033; }
 .light option { color: #172033; background: #ffffff; }
+.light .recharts-default-tooltip {
+  background-color: #ffffff !important;
+  border: 1px solid #d7e1ec !important;
+  color: #172033 !important;
+}
+.light .recharts-tooltip-label { color: #334155 !important; }
+.light .recharts-tooltip-item { color: #172033 !important; }
+
 
 .light .bg-amber-500\/15,
 .light .bg-amber-400\/10,
