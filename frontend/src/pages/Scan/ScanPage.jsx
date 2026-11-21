@@ -18,6 +18,8 @@ import { HELP } from '../../content/helpContent';
 const EXTRACT_TIMEOUT_MS = 90_000;
 const OCR_CACHE_KEY = 'monargent:ocr-preview';
 const TITLE_MAX = 150;
+const MAX_DOCUMENT_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_INPUT_BYTES = 25 * 1024 * 1024;
 
 const todayIsoDate = () => {
   const d = new Date();
@@ -73,8 +75,17 @@ const ScanPage = () => {
     setError(null);
     setCompressedHint('');
     const f = e.target.files?.[0];
-    if (f) setFile(f);
     e.target.value = '';
+    if (!f) return;
+
+    const isImage = f.type.startsWith('image/');
+    const limit = isImage ? MAX_IMAGE_INPUT_BYTES : MAX_DOCUMENT_BYTES;
+    if (f.size > limit) {
+      setError(`El archivo supera el límite de ${Math.round(limit / (1024 * 1024))} MB.`);
+      return;
+    }
+
+    setFile(f);
   };
 
   const cancelExtraction = () => {
@@ -163,6 +174,10 @@ const ScanPage = () => {
     } catch (e) {
       if (controller.signal.aborted || e.code === 'ERR_CANCELED') {
         setError('Extracción cancelada.');
+        return;
+      }
+      if (e.code === 'UNSUPPORTED_IMAGE') {
+        setError(e.message);
         return;
       }
       if (e.code === 'ECONNABORTED') {
