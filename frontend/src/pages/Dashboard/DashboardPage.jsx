@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useCallback } from 'react';
 import { useTransactions } from '../../context/TransactionContext';
+import { usePreferences } from '../../context/PreferencesContext';
 import Layout from '../../components/layout/Layout';
+
 import ExpenseChartsSection from '../../components/dashboard/ExpenseChartsSection';
 import useLiveRefresh from '../../hooks/useLiveRefresh';
 import { CircleDollarSign, Wallet, ScanLine, Users, ShoppingCart, Play } from 'lucide-react';
@@ -11,6 +13,8 @@ import { formatArgentineDate } from '../../utils/datetime';
 const DashboardPage = () => {
   const navigate = useNavigate();
   const { transactions, categories, fetchTransactions, fetchCategories } = useTransactions();
+  const { t } = usePreferences();
+
 
   const now = new Date();
   const month = now.getMonth() + 1;
@@ -56,28 +60,32 @@ const DashboardPage = () => {
   );
 
   const quickActions = [
-    { label: 'Ingresos', icon: CircleDollarSign, onClick: () => navigate('/transactions/income') },
-    { label: 'Gastos', icon: Wallet, onClick: () => navigate('/transactions/expense') },
-    { label: 'Escanear', icon: ScanLine, onClick: () => navigate('/scan') },
-    { label: 'Grupos', icon: Users, onClick: () => navigate('/groups') },
+    { label: t('nav.income'), icon: CircleDollarSign, onClick: () => navigate('/transactions/income') },
+    { label: t('nav.expense'), icon: Wallet, onClick: () => navigate('/transactions/expense') },
+    { label: t('nav.scan'), icon: ScanLine, onClick: () => navigate('/scan') },
+    { label: t('nav.groups'), icon: Users, onClick: () => navigate('/groups') },
   ];
+
 
   return (
     <Layout>
       <div className="max-w-6xl mx-auto text-slate-100 pb-4">
         <section className="rounded-3xl border border-[#284567] bg-[#0f2543] p-5 max-w-xl">
-          <p className="text-[10px] tracking-[0.25em] uppercase text-slate-400">Saldo disponible</p>
+          <p className="text-[10px] tracking-[0.25em] uppercase text-slate-400">{t('dashboard.balance')}</p>
+
           <h2 className="text-3xl sm:text-4xl font-amount text-money-balance mt-2">{formatPeso(stats.balance)}</h2>
 
           <div className="mt-4 h-px bg-[#2c496d]" />
 
           <div className="grid grid-cols-2 gap-4 mt-4">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Ingresos</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">{t('dashboard.income')}</p>
+
               <p className="text-xl font-amount text-money-income mt-1">{formatPeso(stats.income)}</p>
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Gastos</p>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">{t('dashboard.expense')}</p>
+
               <p className="text-xl font-amount text-money-expense mt-1">{formatPeso(stats.expenses)}</p>
             </div>
           </div>
@@ -100,7 +108,8 @@ const DashboardPage = () => {
 
         <section className="mt-4 max-w-xl">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-section-title">Movimientos recientes</h3>
+            <h3 className="text-section-title">{t('dashboard.recent')}</h3>
+
             <button
               onClick={() => navigate('/transactions')}
               className="text-amber-300 text-sm font-semibold"

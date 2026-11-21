@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { usePreferences } from '../../context/PreferencesContext';
 import UserMenu from './UserMenu';
 import NotificationBell from './NotificationBell';
 import ProfileMoodFace from './ProfileMoodFace';
@@ -15,26 +16,30 @@ import {
   ChevronLeft,
   ChevronRight,
   Pencil,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
+
 const NAV_ITEMS = [
-  { path: '/dashboard', label: 'Inicio', icon: House },
-  { path: '/calendar', label: 'Calendario', icon: Calendar },
-  { path: '/goals', label: 'Objetivos', icon: Target },
-  { path: '/recommendations', label: 'IA', icon: Sparkles },
+  { path: '/dashboard', labelKey: 'nav.home', icon: House },
+  { path: '/calendar', labelKey: 'nav.calendar', icon: Calendar },
+  { path: '/goals', labelKey: 'nav.goals', icon: Target },
+  { path: '/recommendations', labelKey: 'nav.ai', icon: Sparkles },
 ];
 
-const PAGE_TITLES = {
-  '/dashboard': 'Inicio',
-  '/transactions': 'Movimientos',
-  '/transactions/income': 'Ingresos',
-  '/transactions/expense': 'Gastos',
-  '/calendar': 'Calendario',
-  '/goals': 'Objetivos',
-  '/recommendations': 'Recomendaciones',
-  '/groups': 'Grupos',
-  '/scan': 'Escanear',
+const PAGE_TITLE_KEYS = {
+  '/dashboard': 'nav.home',
+  '/transactions': 'nav.transactions',
+  '/transactions/income': 'nav.income',
+  '/transactions/expense': 'nav.expense',
+  '/calendar': 'nav.calendar',
+  '/goals': 'nav.goals',
+  '/recommendations': 'nav.recommendations',
+  '/groups': 'nav.groups',
+  '/scan': 'nav.scan',
 };
+
 
 const STORAGE_KEY = 'sidebar_expanded';
 
@@ -42,6 +47,8 @@ const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, updateProfile, refreshUser } = useAuth();
+  const { theme, currency, language, toggleTheme, toggleCurrency, toggleLanguage, t } = usePreferences();
+
 
   const [expanded, setExpanded] = useState(() => {
     try {
@@ -133,9 +140,10 @@ const Layout = ({ children }) => {
       setNameSaving(false);
     }
   };
-  const mobileTitle = PAGE_TITLES[location.pathname] || 'MonArgent';
+  const mobileTitle = PAGE_TITLE_KEYS[location.pathname] ? t(PAGE_TITLE_KEYS[location.pathname]) : 'MonArgent';
   const isDashboard = location.pathname === '/dashboard';
   const timeGreeting = getTimeGreeting();
+
 
   const activeClass =
     'bg-amber-500/15 text-amber-400 border-l-2 border-amber-400';
@@ -187,20 +195,24 @@ const Layout = ({ children }) => {
 
         {/* Nav */}
         <nav className="flex-1 py-4 space-y-1 overflow-hidden">
-          {NAV_ITEMS.map(({ path, label, icon: Icon }) => (
-            <div key={path} className={expanded ? 'px-3' : 'px-2'}>
-              <button
-                onClick={() => handleNav(path)}
-                title={!expanded ? label : undefined}
-                className={`${baseNavClass} ${
-                  isActive(path) ? activeClass : inactiveClass
-                } ${!expanded ? 'justify-center px-0' : ''}`}
-              >
-                <Icon size={18} className="flex-shrink-0" />
-                {expanded && <span className="truncate">{label}</span>}
-              </button>
-            </div>
-          ))}
+          {NAV_ITEMS.map(({ path, labelKey, icon: Icon }) => {
+            const label = t(labelKey);
+            return (
+              <div key={path} className={expanded ? 'px-3' : 'px-2'}>
+                <button
+                  onClick={() => handleNav(path)}
+                  title={!expanded ? label : undefined}
+                  className={`${baseNavClass} ${
+                    isActive(path) ? activeClass : inactiveClass
+                  } ${!expanded ? 'justify-center px-0' : ''}`}
+                >
+                  <Icon size={18} className="flex-shrink-0" />
+                  {expanded && <span className="truncate">{label}</span>}
+                </button>
+              </div>
+            );
+          })}
+
         </nav>
       </aside>
 
@@ -236,7 +248,34 @@ const Layout = ({ children }) => {
           </div>
 
           {/* Right side */}
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={toggleLanguage}
+              className="min-w-[40px] h-9 px-2 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-amber-300 hover:bg-white/5 border border-slate-700/60 transition-colors"
+              title={language === 'es' ? 'Switch to English' : 'Cambiar a Español'}
+              aria-label={language === 'es' ? 'Switch to English' : 'Cambiar a Español'}
+            >
+              {language === 'es' ? 'ES' : 'EN'}
+            </button>
+            <button
+              type="button"
+              onClick={toggleCurrency}
+              className="min-w-[44px] h-9 px-2 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-amber-300 hover:bg-white/5 border border-slate-700/60 transition-colors"
+              title={currency === 'ARS' ? t('currency.dollar') : t('currency.peso')}
+              aria-label={currency === 'ARS' ? t('currency.dollar') : t('currency.peso')}
+            >
+              {currency === 'ARS' ? '$' : 'US$'}
+            </button>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-300 hover:text-amber-300 hover:bg-white/5 border border-slate-700/60 transition-colors"
+              title={theme === 'dark' ? t('theme.light') : t('theme.dark')}
+              aria-label={theme === 'dark' ? t('theme.light') : t('theme.dark')}
+            >
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
             <ProfileMoodFace />
             <NotificationBell />
             <UserMenu initials={getInitials()} onLogout={logout} />
@@ -246,6 +285,7 @@ const Layout = ({ children }) => {
             </span>
             )}
           </div>
+
         </header>
 
         {/* Content */}
@@ -262,9 +302,9 @@ const Layout = ({ children }) => {
         {/* Mobile Bottom Navigation */}
         <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-[#26415f] bg-[#081b33]/95 backdrop-blur-xl px-2 py-2 pb-safe">
           <div className="grid grid-cols-4 gap-1">
-            {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
+            {NAV_ITEMS.map(({ path, labelKey, icon: Icon }) => {
               const active = isActive(path);
-
+              const label = t(labelKey);
               return (
                 <button
                   key={path}
@@ -281,6 +321,7 @@ const Layout = ({ children }) => {
                 </button>
               );
             })}
+
           </div>
         </nav>
       </div>

@@ -19,6 +19,8 @@ import Layout from '../../components/layout/Layout';
 import apiClient from '../../services/api';
 import { formatPeso } from '../../utils/format';
 import { formatArgentineDate } from '../../utils/datetime';
+import { usePreferences } from '../../context/PreferencesContext';
+
 import {
   digitsFromNumericAmount,
   formatAmountFromDigits,
@@ -134,7 +136,8 @@ const GoalCard = ({ goal, onDeposit, onEdit, onDelete }) => {
           onClick={() => onDeposit(goal)}
           className="bg-amber-500 hover:bg-amber-400 text-slate-900 text-xs font-semibold py-1.5 px-3 rounded-lg transition-colors"
         >
-          Depositar
+          {t('goals.deposit')}
+
         </button>
         <button
           onClick={() => onEdit(goal)}
@@ -156,7 +159,9 @@ const GoalCard = ({ goal, onDeposit, onEdit, onDelete }) => {
 };
 
 export default function GoalsPage() {
+  const { t } = usePreferences();
   const [goals, setGoals] = useState([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -340,7 +345,8 @@ export default function GoalsPage() {
             className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold px-4 py-2 rounded-full transition-colors text-sm"
           >
             <Plus size={16} />
-            Nuevo objetivo
+            {t('goals.new')}
+
           </button>
         </div>
 
@@ -420,7 +426,8 @@ export default function GoalsPage() {
       </div>
 
       {showForm && (
-        <AppModal title={editingGoal ? 'Editar objetivo' : 'Nuevo objetivo'} open onClose={closeForm}>
+        <AppModal title={editingGoal ? 'Editar objetivo' : t('goals.new')} open onClose={closeForm}>
+
           <form onSubmit={handleFormSubmit} className="flex flex-col gap-4">
             <ModalField label="Título">
               <input
@@ -534,7 +541,8 @@ export default function GoalsPage() {
               </p>
             )}
 
-            <ModalActions onCancel={closeDeposit} submitLabel="Depositar" loading={depositLoading} />
+            <ModalActions onCancel={closeDeposit} submitLabel={t('goals.deposit')} loading={depositLoading} />
+
           </form>
         </AppModal>
       )}

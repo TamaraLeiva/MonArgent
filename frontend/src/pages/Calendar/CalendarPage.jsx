@@ -10,7 +10,9 @@ import { HELP } from '../../content/helpContent';
 
 import apiClient from '../../services/api';
 
+import { usePreferences } from '../../context/PreferencesContext';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
+
 
 
 
@@ -78,8 +80,10 @@ function groupByDay(transactions) {
 
 
 const CalendarPage = () => {
+  const { t } = usePreferences();
 
   const now = new Date();
+
 
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
 
@@ -629,7 +633,8 @@ const CalendarPage = () => {
 
           <h3 className="text-section-title mb-3 flex items-center gap-2">
             <Repeat size={18} className="text-amber-400" />
-            Gastos fijos del mes
+            {t('calendar.fixedExpenses')}
+
           </h3>
 
           <div className="space-y-3">

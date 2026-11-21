@@ -1,6 +1,4 @@
-/**
- * Formato argentino: $ 1.000,50 · fechas dd/MM/yyyy
- */
+import { getCurrencySymbol, getNumberLocale } from './preferencesStore';
 
 /**
  * Interpreta un monto numérico o texto en formatos AR/US.
@@ -10,11 +8,14 @@ export function parseMoney(value) {
   if (value == null || value === '') return NaN;
   if (typeof value === 'number') return value;
 
-  const raw = String(value).trim().replace(/^\$\s?/, '').replace(/\s/g, '');
+  const raw = String(value)
+    .trim()
+    .replace(/^(US\$|U\$S|ARS|\$)\s?/i, '')
+    .replace(/\s/g, '');
   if (!raw) return NaN;
 
   // US miles: 19,800 o 19,800.50
-  if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(raw)) {
+  if (/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(raw)) {
     return parseFloat(raw.replace(/,/g, ''));
   }
 
@@ -24,7 +25,7 @@ export function parseMoney(value) {
   }
 
   // AR solo miles: 19.800 o 1.234.567
-  if (/^\d{1,3}(\.\d{3})+$/.test(raw)) {
+  if (/^-?\d{1,3}(\.\d{3})+$/.test(raw)) {
     return parseFloat(raw.replace(/\./g, ''));
   }
 
@@ -32,14 +33,15 @@ export function parseMoney(value) {
 }
 
 export function formatPeso(amount, { decimals = 0 } = {}) {
-  if (amount == null || amount === '') return '$0';
+  const symbol = getCurrencySymbol();
+  if (amount == null || amount === '') return `${symbol}0`;
   const num = parseMoney(amount);
-  if (Number.isNaN(num)) return '$0';
-  const formatted = num.toLocaleString('es-AR', {
+  if (Number.isNaN(num)) return `${symbol}0`;
+  const formatted = Math.abs(num).toLocaleString(getNumberLocale(), {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });
-  return `$${formatted}`;
+  return `${symbol}${formatted}`;
 }
 
 export function formatPesoSigned(amount, type) {
@@ -48,10 +50,11 @@ export function formatPesoSigned(amount, type) {
   return `${prefix}${formatPeso(Math.abs(Number.isNaN(num) ? 0 : num))}`;
 }
 
-/** Balance con signo separado del peso: `- $600` */
+/** Balance con signo separado del símbolo: `- $600` */
 export function formatPesoBalance(amount) {
   const num = parseMoney(amount);
   const safe = Number.isNaN(num) ? 0 : num;
   const sign = safe >= 0 ? '+ ' : '- ';
   return `${sign}${formatPeso(Math.abs(safe))}`;
 }
+

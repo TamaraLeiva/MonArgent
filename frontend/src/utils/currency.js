@@ -1,5 +1,7 @@
+import { getCurrencySymbol, getNumberLocale } from './preferencesStore';
+
 /**
- * Formateo de montos en estilo argentino (miles con punto, decimales con coma).
+ * Formateo de montos con símbolo/locale según preferencias.
  * Internamente trabajamos con "centavos" (solo dígitos) para evitar errores de parsing.
  */
 
@@ -12,7 +14,8 @@ export function formatAmountFromDigits(digits) {
   const cents = parseInt(digits, 10);
   if (Number.isNaN(cents)) return '';
   const value = cents / 100;
-  return `$${value.toLocaleString('es-AR', {
+  const symbol = getCurrencySymbol();
+  return `${symbol}${value.toLocaleString(getNumberLocale(), {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
@@ -31,3 +34,4 @@ export function parseAmountDigits(digits) {
   if (Number.isNaN(cents)) return NaN;
   return cents / 100;
 }
+

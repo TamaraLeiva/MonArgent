@@ -4,12 +4,16 @@ import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AuthLayout from '../../components/auth/AuthLayout';
 import { getErrorMessage } from '../../utils/apiErrors';
+import { usePreferences } from '../../context/PreferencesContext';
+
 
 const inputCls =
   'w-full rounded-xl bg-[#0a1525] border border-[#243a5c] text-white px-4 py-3 text-sm placeholder:text-slate-500 focus:outline-none focus:border-amber-400/70 focus:ring-1 focus:ring-amber-400/30 transition';
 
 const LoginPage = () => {
   const { login } = useAuth();
+  const { t } = usePreferences();
+
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,7 +56,8 @@ const LoginPage = () => {
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="block text-sm text-slate-400 mb-1.5">Correo electrónico</label>
+          <label className="block text-sm text-slate-400 mb-1.5">{t('auth.email')}</label>
+
           <input
             type="email"
             required
@@ -66,12 +71,14 @@ const LoginPage = () => {
 
         <div>
           <div className="flex justify-between items-center mb-1.5">
-            <label className="text-sm text-slate-400">Contraseña</label>
+            <label className="text-sm text-slate-400">{t('auth.password')}</label>
+
             <Link
               to="/forgot-password"
               className="text-xs text-amber-400 hover:text-amber-300 transition-colors"
             >
-              ¿Olvidaste tu contraseña?
+              {t('auth.forgot')}
+
             </Link>
           </div>
           <div className="relative">

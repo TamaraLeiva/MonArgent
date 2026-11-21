@@ -2,7 +2,9 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Layout from '../../components/layout/Layout';
 import GroupDetailView from '../../components/groups/GroupDetailView';
 import { useAuth } from '../../context/AuthContext';
+import { usePreferences } from '../../context/PreferencesContext';
 import { groupService } from '../../services/groupService';
+
 import useLiveRefresh from '../../hooks/useLiveRefresh';
 import { ChevronRight, Loader2, Trash2 } from 'lucide-react';
 import AppModal, { ModalActions, ModalField, modalInputClass } from '../../components/ui/AppModal';
@@ -13,6 +15,8 @@ import useConfirmDialog from '../../hooks/useConfirmDialog';
 
 const GroupsPage = () => {
   const { user, updateProfile } = useAuth();
+  const { t } = usePreferences();
+
   const [groups, setGroups] = useState([]);
   const [invitations, setInvitations] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
@@ -272,7 +276,8 @@ const GroupsPage = () => {
                   listTab === 'active' ? 'bg-amber-400 text-slate-900' : 'border border-[#284567] text-slate-300'
                 }`}
               >
-                Activos
+                {t('groups.active')}
+
               </button>
               <button
                 type="button"
@@ -281,7 +286,8 @@ const GroupsPage = () => {
                   listTab === 'history' ? 'bg-amber-400 text-slate-900' : 'border border-[#284567] text-slate-300'
                 }`}
               >
-                Historial
+                {t('groups.history')}
+
               </button>
             </div>
             <div className="space-y-3">
@@ -304,7 +310,8 @@ const GroupsPage = () => {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1 space-y-1">
                         <p className="text-item-title truncate">{group.title}</p>
-                        <p className="text-item-meta">{group.memberCount} miembros</p>
+                        <p className="text-item-meta">{group.memberCount} {group.memberCount === 1 ? t('groups.member') : t('groups.members')}</p>
+
                         {listTab === 'history' && (
                           <p className="text-xs text-emerald-300">Cerrado</p>
                         )}

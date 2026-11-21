@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTransactions } from '../../context/TransactionContext';
+import { usePreferences } from '../../context/PreferencesContext';
 import Layout from '../../components/layout/Layout';
+
 import MonthYearPicker from '../../components/ui/MonthYearPicker';
 import useLiveRefresh from '../../hooks/useLiveRefresh';
 import { Plus, Trash2, Edit2, Loader2, Calendar } from 'lucide-react';
@@ -45,8 +47,10 @@ const emptyForm = () => {
 };
 
 const TransactionsPage = () => {
+  const { t } = usePreferences();
   const {
     transactions,
+
     categories,
     loading,
     fetchTransactions,
@@ -240,7 +244,8 @@ const TransactionsPage = () => {
 
   const handleDelete = async (id) => {
     const ok = await askConfirm({
-      title: 'Eliminar transacción',
+      title: t('transactions.delete'),
+
       message: '¿Querés eliminar esta transacción? No se puede deshacer.',
       confirmLabel: 'Eliminar',
       danger: true,
@@ -261,7 +266,8 @@ const TransactionsPage = () => {
         {/* Header */}
         <div className={`flex mb-6 ${lockedType ? 'justify-end' : 'justify-between items-center'}`}>
           {!lockedType && (
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">Movimientos</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">{t('transactions.title')}</h1>
+
           )}
           {!isReadOnlyList && (
             <button
@@ -304,7 +310,8 @@ const TransactionsPage = () => {
             {!isReadOnlyList && !lockedType && (
             <button
               onClick={() => { setNewCategoryType(effectiveFilterType || 'EXPENSE'); setShowCategoryModal(true); }}
-              title="Agregar categoría"
+              title={t('transactions.addCategory')}
+
               className="px-3 py-2 bg-amber-500 text-slate-900 rounded-lg hover:opacity-90"
             >
               <Plus size={16} />
@@ -330,7 +337,8 @@ const TransactionsPage = () => {
         {showCategoryModal && (
           <AppModal
             open
-            title="Nueva categoría"
+            title={t('transactions.newCategory')}
+
             onClose={() => setShowCategoryModal(false)}
             zIndex="z-[100]"
           >
@@ -419,14 +427,16 @@ const TransactionsPage = () => {
                     <button
                       onClick={() => handleOpenModal(tx)}
                       className="p-1.5 md:p-2 hover:bg-slate-700 rounded-lg transition text-slate-300 hover:text-white"
-                      title="Editar"
+                      title={t('transactions.edit')}
+
                     >
                       <Edit2 size={16} />
                     </button>
                     <button
                       onClick={() => handleDelete(tx.id)}
                       className="p-1.5 md:p-2 hover:bg-red-900/30 rounded-lg transition text-red-400 hover:text-red-300"
-                      title="Eliminar"
+                      title={t('transactions.deleteAction')}
+
                     >
                       <Trash2 size={16} />
                     </button>

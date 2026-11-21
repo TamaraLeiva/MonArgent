@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import Layout from '../../components/layout/Layout';
 import api from '../../services/api';
 import { useTransactions } from '../../context/TransactionContext';
+import { usePreferences } from '../../context/PreferencesContext';
 import { Plus, Trash2, Camera, Upload, Loader2, X } from 'lucide-react';
+
 import { formatPeso } from '../../utils/format';
 import {
   formatAmountFromDigits,
@@ -60,7 +62,9 @@ const ScanPage = () => {
   const [compressedHint, setCompressedHint] = useState('');
 
   const { categories, fetchCategories, fetchTransactions } = useTransactions();
+  const { t } = usePreferences();
   const loading = stage !== null;
+
 
   useEffect(() => {
     fetchCategories();
@@ -118,7 +122,8 @@ const ScanPage = () => {
   };
 
   const submit = async () => {
-    if (!file) return setError('Seleccioná un archivo primero');
+    if (!file) return setError(t('scan.selectFile'));
+
 
     const fingerprint = fileFingerprint(file);
     try {
@@ -127,7 +132,8 @@ const ScanPage = () => {
         const parsedCache = JSON.parse(cached);
         if (parsedCache.fingerprint === fingerprint && parsedCache.preview) {
           applyPreview(parsedCache.preview);
-          setCompressedHint(parsedCache.compressedHint || 'Resultado en caché (misma imagen).');
+          setCompressedHint(parsedCache.compressedHint || t('scan.cached'));
+
           return;
         }
       }
@@ -173,7 +179,8 @@ const ScanPage = () => {
       }));
     } catch (e) {
       if (controller.signal.aborted || e.code === 'ERR_CANCELED') {
-        setError('Extracción cancelada.');
+        setError(t('scan.cancelled'));
+
         return;
       }
       if (e.code === 'UNSUPPORTED_IMAGE') {
@@ -323,7 +330,8 @@ const ScanPage = () => {
       <div className="max-w-4xl mx-auto text-slate-100 pb-6 px-1">
         <section className="rounded-3xl border border-[#284567] bg-[#0f2543] p-4 sm:p-6 mt-4">
           <div className="flex items-start justify-between gap-3 mb-2">
-            <h2 className="text-xl sm:text-2xl font-semibold">Importar movimientos</h2>
+            <h2 className="text-xl sm:text-2xl font-semibold">{t('scan.title')}</h2>
+
             <HelpTip title={HELP.scan.title} body={HELP.scan.body} align="right" />
           </div>
           <p className="text-sm text-slate-400 mb-4">
@@ -364,7 +372,8 @@ const ScanPage = () => {
                 className="flex items-center justify-center gap-2 rounded-xl border border-[#284567] px-4 py-3 text-slate-200 disabled:opacity-50"
               >
                 <Upload size={20} />
-                Subir archivo
+                {t('scan.upload')}
+
               </button>
             </div>
 
@@ -411,8 +420,9 @@ const ScanPage = () => {
                     className="flex items-center gap-1 text-xs text-slate-400 hover:text-red-300"
                   >
                     <X size={14} />
-                    Cancelar
+                    {t('scan.cancel')}
                   </button>
+
                 </div>
               </div>
             )}
@@ -424,7 +434,8 @@ const ScanPage = () => {
                 disabled={loading || !file}
                 className="rounded-lg bg-emerald-400 text-slate-900 px-5 py-2.5 font-semibold disabled:opacity-50"
               >
-                {loading ? 'Procesando…' : 'Extraer movimientos'}
+                {loading ? t('scan.processing') : t('scan.extract')}
+
               </button>
             </div>
 
@@ -449,7 +460,8 @@ const ScanPage = () => {
                   onClick={addItem}
                   className="flex items-center gap-1 text-sm text-[#E8B923]"
                 >
-                  <Plus size={16} /> Agregar
+                  <Plus size={16} /> {t('scan.add')}
+
                 </button>
               </div>
 

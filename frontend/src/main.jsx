@@ -3,7 +3,14 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { resolveApiBaseUrl } from './services/apiConfig';
 import { redirectLegacyHostIfNeeded } from './utils/canonicalApp';
+import { getPreferences } from './utils/preferencesStore';
 import './styles/tailwind.css';
+
+const initialPrefs = getPreferences();
+document.documentElement.classList.add(initialPrefs.theme);
+document.documentElement.lang = initialPrefs.language === 'en' ? 'en' : 'es';
+document.documentElement.style.colorScheme = initialPrefs.theme;
+
 
 function renderBootError(message) {
   const root = document.getElementById('root');
