@@ -3,7 +3,7 @@ import React, { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { RoundedBox } from '@react-three/drei';
-import { normalizeBarHeight, getBarSceneLayout } from '../../utils/chart3dGeometry';
+import { normalizeBarHeight } from '../../utils/chart3dGeometry';
 
 function GlossyBar({ color, height, active }) {
   const meshRef = useRef();
