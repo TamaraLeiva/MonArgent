@@ -182,7 +182,10 @@
 .light .bg-\[\#0f2440\],
 .light .bg-\[\#1a3457\],
 .light .bg-\[\#132a4a\],
-.light .bg-\[\#173459\] { background-color: #ffffff !important; }
+.light .bg-\[\#173459\],
+.light .bg-\[\#2d4667\],
+.light .bg-\[\#162238\] { background-color: #ffffff !important; }
+
 
 
 .light .bg-gradient-to-b.from-\[\#071b34\].to-\[\#06162b\] {
@@ -221,9 +224,14 @@
 .light .hover\:bg-\[\#22456f\]:hover,
 .light .hover\:bg-\[\#1a3457\]:hover { background-color: #eef3f9 !important; }
 .light .bg-\[\#2e4c72\] { background-color: #dbe7f3 !important; }
+.light .bg-slate-800,
 .light .bg-slate-800\/40,
+.light .bg-slate-700,
 .light .bg-slate-700\/50,
 .light .bg-slate-700\/40 { background-color: #f1f5f9 !important; }
+.light .border-slate-700,
+.light .border-slate-600 { border-color: #d7e1ec !important; }
+
 .light select, .light input, .light textarea { color: #172033; }
 .light option { color: #172033; background: #ffffff; }
 

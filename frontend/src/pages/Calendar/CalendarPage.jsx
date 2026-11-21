@@ -651,7 +651,8 @@ const CalendarPage = () => {
 
                 <article
                   key={fe.id}
-                  className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/12 via-[#0f2543] to-[#0b2034] p-4 flex items-center gap-4 shadow-[0_0_24px_rgba(251,191,36,0.06)]"
+                  className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 flex items-center gap-4"
+
                 >
 
                   <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-300 to-amber-700" />
@@ -706,8 +707,9 @@ const CalendarPage = () => {
 
                 <article
                   key={ev.id}
-                  className="relative overflow-hidden rounded-2xl border border-sky-400/30 bg-gradient-to-br from-sky-500/12 via-[#0f2543] to-[#0b2034] p-4 flex items-center justify-between gap-3 shadow-[0_0_24px_rgba(56,189,248,0.06)]"
+                  className="relative overflow-hidden rounded-2xl border border-sky-400/30 bg-sky-500/10 p-4 flex items-center justify-between gap-3"
                 >
+
 
                   <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-sky-300 to-sky-600" />
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import apiClient from '../../services/api';
-import MonthYearPicker from '../ui/MonthYearPicker';
-import PeriodRangeFilter from '../ui/PeriodRangeFilter';
+import PeriodFilter from '../ui/PeriodFilter';
+
 
 import { Chart3DBar, Chart3DPie } from '../charts/Chart3DWrapper';
 import {
@@ -198,34 +198,36 @@ const ExpenseChartsSection = ({ categories }) => {
       <div className="rounded-3xl border border-[#284567] bg-[#0f2543] p-5">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
-            <h3 className="text-section-title">Comparativa de gastos</h3>
-            <p className="text-xs text-slate-400 mt-1">Elegí el rango de meses</p>
+            <h3 className="text-section-title">Comparativa mensual de gastos</h3>
+            <p className="text-xs text-slate-400 mt-1">Comparación mensual por rango de meses</p>
+
           </div>
-          <button
-            type="button"
-            onClick={handleExportComparison}
-            disabled={exporting === 'comparison' || comparisonData.length === 0}
-            className="text-xs px-3 py-2 rounded-lg bg-amber-400 text-slate-900 font-semibold disabled:opacity-50"
-          >
-            {exporting === 'comparison' ? 'Exportando...' : 'PDF'}
-          </button>
+          <div className="flex items-center gap-2">
+            <PeriodFilter
+              mode="range"
+              label="Período"
+              startMonth={rangeStartMonth}
+              startYear={rangeStartYear}
+              endMonth={rangeEndMonth}
+              endYear={rangeEndYear}
+              onChangeStart={(m, y) => { setRangeStartMonth(m); setRangeStartYear(y); }}
+              onChangeEnd={(m, y) => { setRangeEndMonth(m); setRangeEndYear(y); }}
+              defaultStartMonth={defaultRange.startMonth}
+              defaultStartYear={defaultRange.startYear}
+              defaultEndMonth={defaultRange.endMonth}
+              defaultEndYear={defaultRange.endYear}
+            />
+            <button
+              type="button"
+              onClick={handleExportComparison}
+              disabled={exporting === 'comparison' || comparisonData.length === 0}
+              className="text-xs px-3 py-2 rounded-lg bg-amber-400 text-slate-900 font-semibold disabled:opacity-50"
+            >
+              {exporting === 'comparison' ? 'Exportando...' : 'PDF'}
+            </button>
+          </div>
         </div>
 
-        <div className="flex justify-end mb-4">
-          <PeriodRangeFilter
-            label="Período"
-            startMonth={rangeStartMonth}
-            startYear={rangeStartYear}
-            endMonth={rangeEndMonth}
-            endYear={rangeEndYear}
-            onChangeStart={(m, y) => { setRangeStartMonth(m); setRangeStartYear(y); }}
-            onChangeEnd={(m, y) => { setRangeEndMonth(m); setRangeEndYear(y); }}
-            defaultStartMonth={defaultRange.startMonth}
-            defaultStartYear={defaultRange.startYear}
-            defaultEndMonth={defaultRange.endMonth}
-            defaultEndYear={defaultRange.endYear}
-          />
-        </div>
 
 
         <div ref={comparisonRef} className="h-80">
@@ -249,23 +251,27 @@ const ExpenseChartsSection = ({ categories }) => {
             <h3 className="text-section-title">Gastos por categoría</h3>
             <p className="text-xs text-slate-400 mt-1">Distribución del período · arrastrá para girar</p>
           </div>
-          <button
-            type="button"
-            onClick={handleExportPie}
-            disabled={exporting === 'pie' || pieData.length === 0}
-            className="text-xs px-3 py-2 rounded-lg bg-amber-400 text-slate-900 font-semibold disabled:opacity-50"
-          >
-            {exporting === 'pie' ? 'Exportando...' : 'PDF'}
-          </button>
+          <div className="flex items-center gap-2">
+            <PeriodFilter
+              mode="single"
+              label="Período"
+              month={pieMonth}
+              year={pieYear}
+              onChange={(m, y) => { setPieMonth(m); setPieYear(y); }}
+              defaultMonth={now.getMonth() + 1}
+              defaultYear={now.getFullYear()}
+            />
+            <button
+              type="button"
+              onClick={handleExportPie}
+              disabled={exporting === 'pie' || pieData.length === 0}
+              className="text-xs px-3 py-2 rounded-lg bg-amber-400 text-slate-900 font-semibold disabled:opacity-50"
+            >
+              {exporting === 'pie' ? 'Exportando...' : 'PDF'}
+            </button>
+          </div>
         </div>
 
-        <MonthYearPicker
-          label="Período"
-          month={pieMonth}
-          year={pieYear}
-          onChange={(m, y) => { setPieMonth(m); setPieYear(y); }}
-          className="mb-4 max-w-xs"
-        />
 
         <div ref={pieRef} className="h-80">
           {loadingPie ? (
