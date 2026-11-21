@@ -1,6 +1,8 @@
 package com.monargent.backend.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.monargent.backend.entity.User;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,8 +41,7 @@ class JwtServiceImplTest {
     }
 
     @Test
-    void isTokenValid_wrongUser_returnsFalse() {
-        User owner = User.builder()
+    void isTokenValid_wrongUser_returnsFalse() {        User owner = User.builder()
             .id(1L)
             .name("Owner")
             .lastname("User")
@@ -60,5 +61,28 @@ class JwtServiceImplTest {
         String token = jwtService.generateToken(owner);
 
         assertThat(jwtService.isTokenValid(token, other)).isFalse();
+    }
+
+    @Test
+    void validateSecret_acceptsConfiguredSecret() {
+        assertThatCode(() -> jwtService.validateSecret()).doesNotThrowAnyException();
+    }
+
+    @Test
+    void validateSecret_rejectsShortSecret() {
+        ReflectionTestUtils.setField(jwtService, "secretKey", "c2hvcnQ="); // "short"
+
+        assertThatThrownBy(() -> jwtService.validateSecret())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("32 bytes");
+    }
+
+    @Test
+    void validateSecret_rejectsMalformedBase64() {
+        ReflectionTestUtils.setField(jwtService, "secretKey", "not a base64 secret!");
+
+        assertThatThrownBy(() -> jwtService.validateSecret())
+            .isInstanceOf(IllegalStateException.class)
+            .hasMessageContaining("Base64");
     }
 }

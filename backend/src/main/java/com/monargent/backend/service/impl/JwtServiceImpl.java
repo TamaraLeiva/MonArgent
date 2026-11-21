@@ -6,6 +6,7 @@ import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +26,35 @@ public class JwtServiceImpl implements JwtService {
 
     @Value("${jwt.expiration-ms}")
     private long expirationMs;
+
+    /**
+     * Fail fast on a missing, malformed or weak secret instead of booting with a
+     * predictable key. Generate one with: openssl rand -base64 64
+     */
+    @PostConstruct
+    void validateSecret() {
+        if (secretKey == null || secretKey.isBlank()) {
+            throw new IllegalStateException(
+                "JWT_SECRET is required. Generate one with: openssl rand -base64 64"
+            );
+        }
+
+        byte[] keyBytes;
+        try {
+            keyBytes = Decoders.BASE64.decode(secretKey);
+        } catch (RuntimeException ex) {
+            throw new IllegalStateException(
+                "JWT_SECRET must be standard Base64. Generate one with: openssl rand -base64 64",
+                ex
+            );
+        }
+
+        if (keyBytes.length < 32) {
+            throw new IllegalStateException(
+                "JWT_SECRET must decode to at least 32 bytes (256 bits) for HS256."
+            );
+        }
+    }
 
     @Override
     public String generateToken(UserDetails userDetails) {

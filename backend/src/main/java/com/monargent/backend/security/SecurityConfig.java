@@ -99,23 +99,26 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(
-                    "/auth/**",
+                    "/auth/login",
+                    "/auth/register",
+                    "/auth/verify",
+                    "/auth/resend-code",
+                    "/auth/forgot-password",
+                    "/auth/reset-password",
+                    "/auth/resend-reset-code"
+                ).permitAll()
+                .requestMatchers(
                     "/public/**",
+                    "/health",
+                    "/error",
                     "/swagger-ui.html",
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
                     "/v3/api-docs.yaml",
                     "/api-docs"
                 ).permitAll()
-                .requestMatchers(
-                    "/categories/**",
-                    "/transactions/**",
-                    "/imports/**",
-                    "/receipts/**",
-                    "/groups/**",
-                    "/notifications/**"
-                ).authenticated()
-                .anyRequest().permitAll()
+                // Default deny: every new endpoint is protected unless listed above.
+                .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider)
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
