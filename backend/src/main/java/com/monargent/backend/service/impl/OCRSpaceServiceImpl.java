@@ -45,7 +45,9 @@ public class OCRSpaceServiceImpl implements OCRSpaceService {
             boolean isPdf = contentType.equals("application/pdf") || filename.endsWith(".pdf");
             MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
             body.add("apikey", apiKey);
-            body.add("language", "spa");
+            // Engine 2 detects the language automatically; sending `language` is deprecated.
+            // `isTable` keeps the description/price columns aligned on receipts.
+            body.add("isTable", "true");
             body.add("scale", "true");
             body.add("detectOrientation", "true");
             body.add("OCREngine", "2");
