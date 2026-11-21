@@ -28,9 +28,8 @@ public class GeminiAiCompletionClient implements AiCompletionClient {
     private static final String GEMINI_BASE_URL =
         "https://generativelanguage.googleapis.com/v1beta/models/";
     private static final List<String> FALLBACK_MODELS = List.of(
-        "gemini-2.0-flash",
-        "gemini-2.5-flash",
-        "gemini-flash-latest"
+        "gemini-flash-latest",
+        "gemini-2.5-flash"
     );
     private static final int MAX_ATTEMPTS_PER_MODEL = 3;
 
@@ -39,7 +38,7 @@ public class GeminiAiCompletionClient implements AiCompletionClient {
     @Value("${gemini.api-key:}")
     private String geminiApiKey;
 
-    @Value("${gemini.model:gemini-2.0-flash}")
+    @Value("${gemini.model:gemini-flash-latest}")
     private String geminiModel;
 
     @Override
@@ -101,12 +100,20 @@ public class GeminiAiCompletionClient implements AiCompletionClient {
     private String callApi(String model, String combinedPrompt) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        // Keep the key out of the URL so it never lands in proxy or access logs.
+        headers.set("x-goog-api-key", geminiApiKey);
 
         Map<String, Object> requestBody = Map.of(
-            "contents", List.of(Map.of("parts", List.of(Map.of("text", combinedPrompt))))
+            "contents", List.of(Map.of("parts", List.of(Map.of("text", combinedPrompt)))),
+            "generationConfig", Map.of(
+                "temperature", 0,
+                "topP", 0.1,
+                "maxOutputTokens", 8192,
+                "responseMimeType", "application/json"
+            )
         );
 
-        String url = GEMINI_BASE_URL + model + ":generateContent?key=" + geminiApiKey;
+        String url = GEMINI_BASE_URL + model + ":generateContent";
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
         ResponseEntity<Map<String, Object>> response = restTemplate.exchange(
             url,
