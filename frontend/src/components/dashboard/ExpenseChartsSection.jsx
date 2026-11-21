@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import apiClient from '../../services/api';
 import MonthYearPicker from '../ui/MonthYearPicker';
+import PeriodRangeFilter from '../ui/PeriodRangeFilter';
+
 import { Chart3DBar, Chart3DPie } from '../charts/Chart3DWrapper';
 import {
   aggregateExpensesByCategory,
@@ -30,10 +32,18 @@ const ExpenseChartsSection = ({ categories }) => {
   const pieRef = useRef(null);
   const pieChartRef = useRef(null);
 
-  const [rangeStartMonth, setRangeStartMonth] = useState(1);
-  const [rangeStartYear, setRangeStartYear] = useState(now.getFullYear());
-  const [rangeEndMonth, setRangeEndMonth] = useState(now.getMonth() + 1);
-  const [rangeEndYear, setRangeEndYear] = useState(now.getFullYear());
+  const defaultRange = {
+    startMonth: 1,
+    startYear: now.getFullYear(),
+    endMonth: now.getMonth() + 1,
+    endYear: now.getFullYear(),
+  };
+
+  const [rangeStartMonth, setRangeStartMonth] = useState(defaultRange.startMonth);
+  const [rangeStartYear, setRangeStartYear] = useState(defaultRange.startYear);
+  const [rangeEndMonth, setRangeEndMonth] = useState(defaultRange.endMonth);
+  const [rangeEndYear, setRangeEndYear] = useState(defaultRange.endYear);
+
 
   const [pieMonth, setPieMonth] = useState(now.getMonth() + 1);
   const [pieYear, setPieYear] = useState(now.getFullYear());
@@ -201,20 +211,22 @@ const ExpenseChartsSection = ({ categories }) => {
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <MonthYearPicker
-            label="Desde"
-            month={rangeStartMonth}
-            year={rangeStartYear}
-            onChange={(m, y) => { setRangeStartMonth(m); setRangeStartYear(y); }}
-          />
-          <MonthYearPicker
-            label="Hasta"
-            month={rangeEndMonth}
-            year={rangeEndYear}
-            onChange={(m, y) => { setRangeEndMonth(m); setRangeEndYear(y); }}
+        <div className="flex justify-end mb-4">
+          <PeriodRangeFilter
+            label="Período"
+            startMonth={rangeStartMonth}
+            startYear={rangeStartYear}
+            endMonth={rangeEndMonth}
+            endYear={rangeEndYear}
+            onChangeStart={(m, y) => { setRangeStartMonth(m); setRangeStartYear(y); }}
+            onChangeEnd={(m, y) => { setRangeEndMonth(m); setRangeEndYear(y); }}
+            defaultStartMonth={defaultRange.startMonth}
+            defaultStartYear={defaultRange.startYear}
+            defaultEndMonth={defaultRange.endMonth}
+            defaultEndYear={defaultRange.endYear}
           />
         </div>
+
 
         <div ref={comparisonRef} className="h-80">
           {selectedMonths.length === 0 ? (

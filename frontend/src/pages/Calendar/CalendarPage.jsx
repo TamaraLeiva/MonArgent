@@ -589,7 +589,8 @@ const CalendarPage = () => {
 
                           {expenses.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-red-400" />}
 
-                          {dayFixed.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />}
+                          {dayFixed.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />}
+
 
                           {dayEvents.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />}
 
@@ -619,7 +620,8 @@ const CalendarPage = () => {
 
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400" />Gasto</span>
 
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400" />Fijo</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-400" />Fijo</span>
+
 
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-sky-400" />Evento</span>
 
@@ -781,10 +783,11 @@ const CalendarPage = () => {
               <button
                 type="button"
                 onClick={() => setAddMode('fixed')}
-                className="flex items-center gap-3 rounded-xl border border-orange-400/30 bg-orange-400/10 p-4 text-left hover:border-orange-400/60"
+                className="flex items-center gap-3 rounded-xl border border-yellow-400/30 bg-yellow-400/10 p-4 text-left hover:border-yellow-400/60"
               >
-                <Repeat className="text-orange-300" size={22} />
+                <Repeat className="text-yellow-300" size={22} />
                 <p className="font-semibold">Gasto fijo</p>
+
               </button>
               <button
                 type="button"

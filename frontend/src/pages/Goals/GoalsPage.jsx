@@ -101,7 +101,9 @@ const IconPicker = ({ value, onChange }) => (
 );
 
 const GoalCard = ({ goal, onDeposit, onEdit, onDelete }) => {
+  const { t } = usePreferences();
   const pct =
+
     goal.targetAmount > 0
       ? Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100))
       : 0;

@@ -175,7 +175,15 @@
 .light .bg-\[\#0f2543\],
 .light .bg-\[\#071b34\],
 .light .bg-\[\#06162b\],
-.light .bg-\[\#0B1528\] { background-color: #ffffff !important; }
+.light .bg-\[\#0B1528\],
+.light .bg-\[\#102744\],
+.light .bg-\[\#102946\],
+.light .bg-\[\#0b2034\],
+.light .bg-\[\#0f2440\],
+.light .bg-\[\#1a3457\],
+.light .bg-\[\#132a4a\],
+.light .bg-\[\#173459\] { background-color: #ffffff !important; }
+
 
 .light .bg-gradient-to-b.from-\[\#071b34\].to-\[\#06162b\] {
   background-image: linear-gradient(to bottom, #f5f8fc, #e9eff7) !important;
@@ -186,7 +194,12 @@
 .light .border-\[\#26415f\],
 .light .border-\[\#284567\],
 .light .border-\[\#2c496d\],
+.light .border-\[\#2a4466\],
+.light .border-\[\#274466\],
+.light .border-\[\#203d60\],
+.light .border-\[\#2b4b72\],
 .light .border-slate-700\/60 { border-color: #d7e1ec !important; }
+
 
 .light .text-slate-100,
 .light .text-white { color: #172033 !important; }
@@ -204,7 +217,16 @@
 
 
 .light .hover\:bg-slate-800:hover,
-.light .hover\:bg-white\/5:hover { background-color: #eef3f9 !important; }
+.light .hover\:bg-white\/5:hover,
+.light .hover\:bg-\[\#22456f\]:hover,
+.light .hover\:bg-\[\#1a3457\]:hover { background-color: #eef3f9 !important; }
+.light .bg-\[\#2e4c72\] { background-color: #dbe7f3 !important; }
+.light .bg-slate-800\/40,
+.light .bg-slate-700\/50,
+.light .bg-slate-700\/40 { background-color: #f1f5f9 !important; }
+.light select, .light input, .light textarea { color: #172033; }
+.light option { color: #172033; background: #ffffff; }
+
 .light .bg-amber-500\/15,
 .light .bg-amber-400\/10,
 .light .bg-amber-500\/10 { background-color: rgba(232, 185, 35, 0.14) !important; }
