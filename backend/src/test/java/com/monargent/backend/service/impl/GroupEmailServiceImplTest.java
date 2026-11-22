@@ -1,6 +1,10 @@
 package com.monargent.backend.service.impl;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,7 +15,7 @@ import com.monargent.backend.entity.Group;
 import com.monargent.backend.entity.GroupGuestMember;
 import com.monargent.backend.entity.User;
 import com.monargent.backend.service.GuestPayUrlService;
-import jakarta.mail.internet.MimeMessage;
+import com.monargent.backend.service.mail.EmailTransport;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,15 +24,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class GroupEmailServiceImplTest {
 
-    @Mock private JavaMailSender mailSender;
+    @Mock private EmailTransport emailTransport;
     @Mock private GuestPayUrlService guestPayUrlService;
-    @Mock private MimeMessage mimeMessage;
 
     @InjectMocks
     private GroupEmailServiceImpl service;
@@ -47,7 +49,6 @@ class GroupEmailServiceImplTest {
         guest = GroupGuestMember.builder()
             .id(7L).displayName("Invitado").email("guest@example.com").mpAlias("guest.mp")
             .group(group).build();
-        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
     }
 
     @Test
@@ -75,12 +76,25 @@ class GroupEmailServiceImplTest {
             new BigDecimal("20"), false);
         service.sendGuestPaymentNoticeEmail(guest, group, new BigDecimal("35"), inviter);
 
-        verify(mailSender, org.mockito.Mockito.atLeast(5)).send(mimeMessage);
+        verify(emailTransport, atLeast(5)).send(anyString(), eq("noreply@monargent.app"), anyString(), anyString(), anyString());
     }
 
     @Test
-    void sendHtml_failure_fallsBackToConsole() {
-        doThrow(new RuntimeException("smtp")).when(mailSender).send(any(MimeMessage.class));
+    void sendHtml_failure_doesNotInterruptFlow() {
+        doThrow(new RuntimeException("smtp")).when(emailTransport).send(anyString(), anyString(), anyString(), anyString(), anyString());
         service.sendGroupInviteEmail("bob@example.com", inviter, group);
+    }
+
+    @Test
+    void sendGuestAddedEmail_includesVerificationCodeAndUrl() {
+        service.sendGuestAddedEmail(guest, group, "123456");
+
+        verify(emailTransport).send(
+            eq("guest@example.com"),
+            eq("noreply@monargent.app"),
+            contains("Te agregaron al grupo"),
+            contains("123456"),
+            contains("123456")
+        );
     }
 }

@@ -7,7 +7,7 @@ import com.monargent.backend.entity.GroupGuestMember;
 import com.monargent.backend.entity.User;
 import com.monargent.backend.service.GroupEmailService;
 import com.monargent.backend.service.GuestPayUrlService;
-import jakarta.mail.internet.MimeMessage;
+import com.monargent.backend.service.mail.EmailTransport;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -17,8 +17,6 @@ import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,7 +24,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class GroupEmailServiceImpl implements GroupEmailService {
 
-    private final JavaMailSender mailSender;
+    private final EmailTransport emailTransport;
     private final GuestPayUrlService guestPayUrlService;
 
     @Value("${app.frontend.url:http://localhost:5173}")
@@ -420,13 +418,7 @@ public class GroupEmailServiceImpl implements GroupEmailService {
 
     private void sendHtml(String to, String subject, String plainText, String html, String notificationType, String operation, String groupRef) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(fromAddress);
-            helper.setTo(to.trim());
-            helper.setSubject(subject);
-            helper.setText(plainText, html);
-            mailSender.send(message);
+            emailTransport.send(to.trim(), fromAddress, subject, plainText, html);
             log.info("Group email sent. type={}, operation={}, groupRef={}", notificationType, operation, groupRef);
         } catch (Exception ex) {
             log.warn(
