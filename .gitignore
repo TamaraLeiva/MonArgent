@@ -1,7 +1,10 @@
-# Common
+﻿# Common
 target/
 node_modules/
 .env
+.env.*
+!.env.example
+!.env.*.example
 
 # IDE / herramientas locales
 .idea/
@@ -11,6 +14,9 @@ node_modules/
 
 # Backend local env y uploads
 backend/.env
+backend/.env.*
+!backend/.env.example
+!backend/.env.*.example
 backend/uploads/
 
 # Frontend local env y builds
@@ -19,12 +25,22 @@ frontend/.env.local
 frontend/.env.development
 frontend/.env.production
 frontend/.env*.local
+!frontend/.env.example
+!frontend/.env.*.example
 frontend/public/app-config.json
 frontend/dist/app-config.json
 frontend/dev-dist/
 frontend/dist/
 frontend/.vite/
 frontend/.vercel/
+
+# Docker / deploy local artifacts
+deploy/certs/
+deploy/**/*.env
+deploy/**/*.pem
+deploy/**/*.key
+*.sql.dump
+*.dump
 
 # Scripts / artefactos locales
 scripts/ngrok.yml

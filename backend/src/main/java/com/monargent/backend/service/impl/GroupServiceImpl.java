@@ -366,25 +366,37 @@ public class GroupServiceImpl implements GroupService {
             throw new InvalidRequestException("Esta liquidación ya está pagada.");
         }
 
-        String storedName = settlementProofStorageService.store(file, groupId, fromMemberKey, toMemberKey);
-        String contentType = file.getContentType();
-
-        GroupSettlementPayment payment = settlementPaymentRepository
+        GroupSettlementPayment existingPayment = settlementPaymentRepository
             .findByGroupIdAndFromMemberKeyAndToMemberKey(groupId, fromMemberKey, toMemberKey)
-            .orElseGet(() -> GroupSettlementPayment.builder()
-                .group(group)
-                .fromMemberKey(fromMemberKey)
-                .toMemberKey(toMemberKey)
-                .markedBy(currentUser)
-                .build());
+            .orElse(null);
+        String previousProofStoredName = existingPayment == null ? null : existingPayment.getProofStoredName();
 
-        payment.setProofStoredName(storedName);
-        payment.setProofContentType(contentType);
+        SettlementProofStorageService.StoredProof storedProof =
+            settlementProofStorageService.store(file, groupId, fromMemberKey, toMemberKey);
+
+        GroupSettlementPayment payment = existingPayment != null ? existingPayment : GroupSettlementPayment.builder()
+            .group(group)
+            .fromMemberKey(fromMemberKey)
+            .toMemberKey(toMemberKey)
+            .markedBy(currentUser)
+            .build();
+
+        payment.setProofStoredName(storedProof.storedName());
+        payment.setProofContentType(storedProof.contentType());
         payment.setProofUploadedAt(LocalDateTime.now());
         payment.setPaymentMethod(SettlementPaymentMethod.MERCADOPAGO);
         payment.setSettlementAmount(settlement.getAmount());
         payment.setMarkedBy(currentUser);
-        settlementPaymentRepository.save(payment);
+        try {
+            settlementPaymentRepository.saveAndFlush(payment);
+        } catch (RuntimeException ex) {
+            settlementProofStorageService.delete(storedProof.storedName());
+            throw ex;
+        }
+
+        if (previousProofStoredName != null && !previousProofStoredName.equals(storedProof.storedName())) {
+            settlementProofStorageService.delete(previousProofStoredName);
+        }
 
         Long creditorUserId = parseUserMemberKey(toMemberKey);
         if (creditorUserId != null) {

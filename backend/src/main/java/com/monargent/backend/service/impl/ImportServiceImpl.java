@@ -154,6 +154,10 @@ public class ImportServiceImpl implements ImportService {
     private List<ExtractedMovementDTO> extractFromExcel(MultipartFile file) {
         try {
             return ExcelMovementParser.parse(file);
+        } catch (InvalidRequestException ex) {
+            throw ex;
+        } catch (IllegalArgumentException ex) {
+            throw new InvalidRequestException(ex.getMessage());
         } catch (Exception ex) {
             log.error("Excel parsing failed", ex);
             throw new InvalidRequestException("No se pudo leer el archivo Excel");

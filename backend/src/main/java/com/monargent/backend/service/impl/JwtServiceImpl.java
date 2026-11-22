@@ -1,5 +1,6 @@
 package com.monargent.backend.service.impl;
 
+import com.monargent.backend.entity.User;
 import com.monargent.backend.service.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
@@ -58,7 +59,11 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public String generateToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails);
+        Map<String, Object> claims = new HashMap<>();
+        if (userDetails instanceof User user) {
+            claims.put("ver", user.getTokenVersion());
+        }
+        return generateToken(claims, userDetails);
     }
 
     private String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
@@ -80,7 +85,17 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
-        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+        if (!username.equals(userDetails.getUsername()) || isTokenExpired(token)) {
+            return false;
+        }
+        if (userDetails instanceof User user) {
+            Object verClaim = extractAllClaims(token).get("ver");
+            if (!(verClaim instanceof Number verNumber)) {
+                return false;
+            }
+            return verNumber.intValue() == user.getTokenVersion();
+        }
+        return true;
     }
 
     private boolean isTokenExpired(String token) {

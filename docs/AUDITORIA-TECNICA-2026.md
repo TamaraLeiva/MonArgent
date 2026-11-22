@@ -304,7 +304,7 @@ En los servicios que arman la respuesta de comprobantes se parsea el `contentTyp
 En los commits `cb1e98e` y `0b8a005` aparece:
 
 ```
-JWT_SECRET=MonArgentClaveSecretaTFI2026TamaraSoledadLeiva412349
+JWT_SECRET=[REDACTADO - SECRETO COMPROMETIDO; ROTAR MANUALMENTE ANTES DEL DESPLIEGUE]
 ```
 
 El repositorio es público (`https://github.com/412349-Leiva/TFI-MonArget.git`). Cualquiera con acceso al historial puede firmar tokens válidos para cualquier usuario. **Rotar el secreto es obligatorio antes de la defensa**, y el valor nuevo debe vivir solo en el panel del proveedor (Render/Railway), nunca en el repo.

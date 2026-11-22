@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DateUtil;
@@ -21,15 +22,24 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.apache.poi.util.IOUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 public final class ExcelMovementParser {
+
+    private static final int MAX_ROWS = 1000;
+    private static final int MAX_CELLS_PER_ROW = 50;
+    private static final int MAX_STRING_LENGTH = 500;
 
     private ExcelMovementParser() {
     }
 
     public static List<ExtractedMovementDTO> parse(MultipartFile file) throws Exception {
+        configurePoiLimits();
         try (InputStream is = file.getInputStream(); Workbook workbook = WorkbookFactory.create(is)) {
+            if (workbook.getNumberOfSheets() < 1) {
+                return List.of();
+            }
             Sheet sheet = workbook.getSheetAt(0);
             Iterator<Row> rows = sheet.iterator();
             if (!rows.hasNext()) {
@@ -48,14 +58,27 @@ public final class ExcelMovementParser {
                 }
             }
 
+            int processedRows = 0;
             while (rows.hasNext()) {
-                ExtractedMovementDTO movement = rowToMovement(rows.next(), hasHeader ? columns : defaultColumns());
+                Row row = rows.next();
+                processedRows++;
+                if (processedRows > MAX_ROWS) {
+                    throw new IllegalArgumentException("El archivo Excel excede el límite máximo de filas permitido.");
+                }
+                ExtractedMovementDTO movement = rowToMovement(row, hasHeader ? columns : defaultColumns());
                 if (movement != null) {
                     movements.add(movement);
                 }
             }
             return movements;
         }
+    }
+
+    private static void configurePoiLimits() {
+        ZipSecureFile.setMinInflateRatio(0.01d);
+        ZipSecureFile.setMaxEntrySize(20L * 1024 * 1024);
+        ZipSecureFile.setMaxTextSize(10L * 1024 * 1024);
+        IOUtils.setByteArrayMaxOverride(20 * 1024 * 1024);
     }
 
     private static Map<String, Integer> defaultColumns() {
@@ -102,6 +125,9 @@ public final class ExcelMovementParser {
     private static ExtractedMovementDTO rowToMovement(Row row, Map<String, Integer> columns) {
         if (row == null) {
             return null;
+        }
+        if (row.getLastCellNum() > MAX_CELLS_PER_ROW) {
+            throw new IllegalArgumentException("El archivo Excel excede el límite máximo de columnas permitido.");
         }
 
         String description = getCellByKey(row, columns, "description");
@@ -179,7 +205,7 @@ public final class ExcelMovementParser {
         if (cell == null) {
             return null;
         }
-        return switch (cell.getCellType()) {
+        String value = switch (cell.getCellType()) {
             case STRING -> cell.getStringCellValue();
             case NUMERIC -> DateUtil.isCellDateFormatted(cell)
                 ? cell.getLocalDateTimeCellValue().toLocalDate().toString()
@@ -189,11 +215,19 @@ public final class ExcelMovementParser {
                 try {
                     yield String.valueOf(cell.getNumericCellValue());
                 } catch (Exception ex) {
-                    yield cell.getStringCellValue();
+                    try {
+                        yield cell.getStringCellValue();
+                    } catch (Exception ignored) {
+                        yield null;
+                    }
                 }
             }
             default -> null;
         };
+        if (value != null && value.length() > MAX_STRING_LENGTH) {
+            return value.substring(0, MAX_STRING_LENGTH);
+        }
+        return value;
     }
 
     private static BigDecimal getNumericCell(Cell cell) {

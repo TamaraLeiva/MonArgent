@@ -31,7 +31,7 @@ public class OCRSpaceServiceImpl implements OCRSpaceService {
             throw new IllegalArgumentException("El archivo de imagen no puede estar vacío");
         }
         try {
-            log.info("Enviando archivo a OCR.Space: {}", file.getOriginalFilename());
+            log.info("Enviando archivo a OCR.Space para extracción de texto.");
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.MULTIPART_FORM_DATA);
             ByteArrayResource fileResource = new ByteArrayResource(file.getBytes()) {
@@ -78,7 +78,7 @@ public class OCRSpaceServiceImpl implements OCRSpaceService {
             throw ex;
         } catch (Exception e) {
             log.error("Error en OCRSpaceService", e);
-            throw new RuntimeException("Error al procesar el OCR: " + e.getMessage(), e);
+            throw new RuntimeException("Error al procesar el OCR.", e);
         }
     }
 }

@@ -70,6 +70,10 @@ public class User implements UserDetails {
     @Column(name = "mp_alias", length = 50)
     private String mpAlias;
 
+    @Column(name = "token_version", nullable = false)
+    @Builder.Default
+    private int tokenVersion = 0;
+
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
     @Builder.Default
     private Set<Transaction> transactions = new HashSet<>();

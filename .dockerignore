@@ -1,0 +1,38 @@
+# Root build context for backend/Dockerfile
+
+# VCS / IDE
+.git
+.github
+.vscode
+.idea
+*.iml
+
+# Env / secrets
+.env
+.env.*
+**/.env
+**/.env.*
+*.pem
+*.key
+*.p12
+*.jks
+
+# Node / frontend (not needed for backend image)
+frontend/
+node_modules/
+**/node_modules/
+
+# Build outputs / local artifacts
+backend/target/
+**/target/
+backend/uploads/
+**/uploads/
+**/tmp/
+*.log
+
+# Docs / misc not needed in image
+docs/
+scripts/
+*.pdf
+Thumbs.db
+.DS_Store

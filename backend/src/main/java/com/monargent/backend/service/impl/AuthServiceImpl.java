@@ -27,7 +27,12 @@ import com.monargent.backend.service.AuthService;
 import com.monargent.backend.service.CurrentUserService;
 import com.monargent.backend.service.GroupOnboardingService;
 import com.monargent.backend.service.JwtService;
+import com.monargent.backend.service.RateLimitService;
 import com.monargent.backend.utils.VerificationCodeUtils;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,13 +61,24 @@ public class AuthServiceImpl implements AuthService {
     private final AuthEmailService authEmailService;
     private final VerificationCodeRepository verificationCodeRepository;
     private final CurrentUserService currentUserService;
+    private final RateLimitService rateLimitService;
 
     @Value("${auth.verification.expiration-minutes:10}")
     private int verificationExpirationMinutes;
 
+    @Value("${app.rate-limit.enabled:true}")
+    private boolean rateLimitEnabled;
+
+    @Value("${app.rate-limit.account.auth.max:10}")
+    private int accountAuthMax;
+
+    @Value("${app.rate-limit.account.auth.window-seconds:900}")
+    private int accountAuthWindowSeconds;
+
     @Override
     public AuthResponse register(RegisterRequest request) {
         String email = normalizeEmail(request.getEmail());
+        checkAccountRateLimit("register", email);
         String name = request.getName() == null ? "" : request.getName().trim();
 
         if (userRepository.existsByEmailIgnoreCase(email)) {
@@ -106,6 +122,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse login(LoginRequest request) {
         String email = normalizeEmail(request.getEmail());
+        checkAccountRateLimit("login", email);
         User user = userRepository.findByEmailIgnoreCase(email)
             .orElseThrow(() -> new InvalidCredentialsException(
                 "Correo o contraseña incorrectos. Verificá que el email esté bien escrito."));
@@ -131,6 +148,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void verify(VerifyCodeRequest request) {
         String email = normalizeEmail(request.getEmail());
+        checkAccountRateLimit("verify", email);
 
         if (userRepository.existsByEmailIgnoreCase(email)) {
             throw new DuplicateEmailException("El correo ya está registrado");
@@ -174,9 +192,15 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse requestPasswordReset(ForgotPasswordRequest request) {
         String email = normalizeEmail(request.getEmail());
+        checkAccountRateLimit("forgot-password", email);
+        String genericMessage = "Si el correo está registrado, te enviamos un código de recuperación.";
 
         if (!userRepository.existsByEmailIgnoreCase(email)) {
-            throw new UserNotFoundException("No hay una cuenta asociada a este correo");
+            return AuthResponse.builder()
+                .email(email)
+                .verified(false)
+                .message(genericMessage)
+                .build();
         }
 
         List<VerificationCode> oldCodes = verificationCodeRepository.findByEmailIgnoreCaseAndPurpose(
@@ -200,14 +224,15 @@ public class AuthServiceImpl implements AuthService {
 
         return AuthResponse.builder()
             .email(email)
-            .verified(true)
-            .message("Te enviamos un código de recuperación a tu correo.")
+            .verified(false)
+            .message(genericMessage)
             .build();
     }
 
     @Override
     public void confirmPasswordReset(ResetPasswordRequest request) {
         String email = normalizeEmail(request.getEmail());
+        checkAccountRateLimit("reset-password", email);
 
         User user = userRepository.findByEmailIgnoreCase(email)
             .orElseThrow(() -> new UserNotFoundException("No hay una cuenta asociada a este correo"));
@@ -226,6 +251,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setTokenVersion(user.getTokenVersion() + 1);
         userRepository.save(user);
 
         List<VerificationCode> oldCodes = verificationCodeRepository.findByEmailIgnoreCaseAndPurpose(
@@ -240,14 +266,18 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void resendCode(ResendCodeRequest request) {
         String email = normalizeEmail(request.getEmail());
+        checkAccountRateLimit("resend-code", email);
 
         if (userRepository.existsByEmailIgnoreCase(email)) {
-            throw new DuplicateEmailException("El correo ya está registrado");
+            return;
         }
 
         VerificationCode pending = verificationCodeRepository
             .findFirstByEmailIgnoreCaseAndPurposeOrderByCreatedAtDesc(email, VerificationPurpose.REGISTRATION)
-                .orElseThrow(() -> new UserNotFoundException("No hay una verificación pendiente para este correo"));
+                .orElse(null);
+        if (pending == null) {
+            return;
+        }
 
         String code = VerificationCodeUtils.generateVerificationCode();
         authEmailService.sendAuthCodeEmail(email, code, AuthEmailType.REGISTRATION_RESEND, verificationExpirationMinutes);
@@ -268,7 +298,7 @@ public class AuthServiceImpl implements AuthService {
                 .createdAt(LocalDateTime.now())
                 .expiration(LocalDateTime.now().plusMinutes(verificationExpirationMinutes))
                 .build();
-                
+
         verificationCodeRepository.save(verificationCode);
     }
 
@@ -285,6 +315,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setTokenVersion(user.getTokenVersion() + 1);
         userRepository.save(user);
     }
 
@@ -349,6 +380,24 @@ public class AuthServiceImpl implements AuthService {
             return last;
         }
         return (first + " " + last).trim();
+    }
+
+    private void checkAccountRateLimit(String action, String email) {
+        if (!rateLimitEnabled || email == null || email.isBlank()) {
+            return;
+        }
+        String key = "account:" + action + ":" + hashKey(normalizeEmail(email));
+        rateLimitService.checkLimit(key, accountAuthMax, accountAuthWindowSeconds);
+    }
+
+    private String hashKey(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashed = digest.digest(value.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hashed, 0, 16);
+        } catch (NoSuchAlgorithmException ex) {
+            return Integer.toHexString(value.hashCode());
+        }
     }
 
     private String normalizeEmail(String email) {

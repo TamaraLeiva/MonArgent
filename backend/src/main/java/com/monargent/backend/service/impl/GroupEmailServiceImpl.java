@@ -78,7 +78,7 @@ public class GroupEmailServiceImpl implements GroupEmailService {
             )
         );
 
-        sendHtml(invitedEmail, subject, plainText, html);
+        sendHtml(invitedEmail, subject, plainText, html, "GROUP_INVITE", "invite_member", "groupId=" + group.getId());
     }
 
     @Override
@@ -137,7 +137,7 @@ public class GroupEmailServiceImpl implements GroupEmailService {
             )
         );
 
-        sendHtml(guest.getEmail(), subject, plainText, html);
+        sendHtml(guest.getEmail(), subject, plainText, html, "GUEST_ADDED", "add_guest", "groupId=" + group.getId());
     }
 
     @Override
@@ -245,7 +245,7 @@ public class GroupEmailServiceImpl implements GroupEmailService {
             )
         );
 
-        sendHtml(guest.getEmail(), subject, plainText, html);
+        sendHtml(guest.getEmail(), subject, plainText, html, "GUEST_DEBT_SUMMARY", "send_debt_summary", "groupId=" + group.getId());
     }
 
     @Override
@@ -338,7 +338,7 @@ public class GroupEmailServiceImpl implements GroupEmailService {
         }
 
         String html = MonargentEmailTemplate.buildEmail("Comprobante de pago", htmlBody);
-        sendHtml(creditorEmail, subject, plainText, html);
+        sendHtml(creditorEmail, subject, plainText, html, "PROOF_UPLOADED", "upload_proof_notify", "groupId=" + group.getId());
     }
 
     @Override
@@ -401,7 +401,7 @@ public class GroupEmailServiceImpl implements GroupEmailService {
         );
 
         String html = MonargentEmailTemplate.buildEmail("Aviso de pago", htmlBody);
-        sendHtml(guest.getEmail(), subject, plainText, html);
+        sendHtml(guest.getEmail(), subject, plainText, html, "GUEST_PAYMENT_NOTICE", "guest_payment_notice", "groupId=" + group.getId());
     }
 
     private String registerUrlFor(String email) {
@@ -418,7 +418,7 @@ public class GroupEmailServiceImpl implements GroupEmailService {
         return frontendUrl + "/verify-code?email=" + URLEncoder.encode(email.trim(), StandardCharsets.UTF_8);
     }
 
-    private void sendHtml(String to, String subject, String plainText, String html) {
+    private void sendHtml(String to, String subject, String plainText, String html, String notificationType, String operation, String groupRef) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
@@ -427,9 +427,30 @@ public class GroupEmailServiceImpl implements GroupEmailService {
             helper.setSubject(subject);
             helper.setText(plainText, html);
             mailSender.send(message);
-            log.info("Group email sent to {}", to);
+            log.info("Group email sent. type={}, operation={}, groupRef={}", notificationType, operation, groupRef);
         } catch (Exception ex) {
-            log.warn("DEV MODE - GROUP EMAIL to {}:\n{}", to, plainText);
+            log.warn(
+                "Group email not sent. type={}, operation={}, groupRef={}, reason={}",
+                notificationType,
+                operation,
+                groupRef,
+                safeFailureReason(ex)
+            );
         }
+    }
+
+    private String safeFailureReason(Exception ex) {
+        if (ex == null || ex.getMessage() == null || ex.getMessage().isBlank()) {
+            return "mail_send_failed";
+        }
+        // No exponer datos sensibles; solo una razón corta y saneada.
+        String message = ex.getMessage()
+            .replaceAll("[\\r\\n\\t]+", " ")
+            .replaceAll("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}", "[redacted-email]")
+            .trim();
+        if (message.length() > 120) {
+            message = message.substring(0, 120);
+        }
+        return message;
     }
 }
