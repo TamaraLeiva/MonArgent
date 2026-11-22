@@ -27,6 +27,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,10 +61,25 @@ public class NotificationScheduler {
     private final NotificationService notificationService;
     private final SpendingLimitAlertHelper spendingLimitAlertHelper;
 
-    @Scheduled(cron = "0 0 9 * * *")
+    @Value("${app.timezone:America/Argentina/Buenos_Aires}")
+    private String appTimezone;
+
+    private ZoneId zoneId() {
+        return ZoneId.of(appTimezone);
+    }
+
+    private LocalDate appToday() {
+        return LocalDate.now(zoneId());
+    }
+
+    private LocalDateTime appNow() {
+        return LocalDateTime.now(zoneId());
+    }
+
+    @Scheduled(cron = "0 0 9 * * *", zone = "${app.timezone:America/Argentina/Buenos_Aires}")
     @Transactional
     public void sendFixedExpenseReminders() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = appToday();
         for (FixedExpense expense : fixedExpenseRepository.findByActiveTrue()) {
             for (int daysBefore : DAY_REMINDERS) {
                 if (!isDaysBeforeDue(today, expense.getDueDay(), daysBefore)) {
@@ -78,10 +95,10 @@ public class NotificationScheduler {
         }
     }
 
-    @Scheduled(cron = "0 30 9 * * *")
+    @Scheduled(cron = "0 30 9 * * *", zone = "${app.timezone:America/Argentina/Buenos_Aires}")
     @Transactional
     public void sendCalendarEventReminders() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = appToday();
         for (CalendarEvent event : calendarEventRepository.findByActiveTrue()) {
             for (int daysBefore : DAY_REMINDERS) {
                 if (!isDaysBeforeMonthDay(today, event.getMonth(), event.getDay(), daysBefore)) {
@@ -96,12 +113,12 @@ public class NotificationScheduler {
         }
     }
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 0 * * * *", zone = "${app.timezone:America/Argentina/Buenos_Aires}")
     @Transactional
     public void sendCalendarEventHourReminders() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = appNow();
         for (CalendarEvent event : calendarEventRepository.findByActiveTrue()) {
-            LocalDate eventDate = nextDueDateInMonth(LocalDate.now(), event.getMonth(), event.getDay());
+            LocalDate eventDate = nextDueDateInMonth(appToday(), event.getMonth(), event.getDay());
             int hour = event.getEventHour() != null ? event.getEventHour() : 12;
             LocalDateTime eventDateTime = eventDate.atTime(hour, 0);
             long hoursUntil = ChronoUnit.HOURS.between(now, eventDateTime);
@@ -116,7 +133,7 @@ public class NotificationScheduler {
         }
     }
 
-    @Scheduled(cron = "0 0 8 * * *")
+    @Scheduled(cron = "0 0 8 * * *", zone = "${app.timezone:America/Argentina/Buenos_Aires}")
     @Transactional
     public void sendSpendingLimitAlerts() {
         for (SpendingLimit limit : spendingLimitRepository.findAll()) {
@@ -124,7 +141,7 @@ public class NotificationScheduler {
         }
     }
 
-    @Scheduled(cron = "0 0 * * * *")
+    @Scheduled(cron = "0 0 * * * *", zone = "${app.timezone:America/Argentina/Buenos_Aires}")
     @Transactional
     public void sendGroupDebtReminders() {
         for (User user : userRepository.findAll()) {

@@ -1,11 +1,13 @@
 package com.monargent.backend.service.impl;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.monargent.backend.enums.AuthEmailType;
+import com.monargent.backend.exception.EmailSendException;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.env.Environment;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -21,6 +24,7 @@ class AuthEmailServiceImplTest {
 
     @Mock private JavaMailSender mailSender;
     @Mock private MimeMessage mimeMessage;
+    @Mock private Environment environment;
 
     @InjectMocks
     private AuthEmailServiceImpl service;
@@ -28,6 +32,7 @@ class AuthEmailServiceImplTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(service, "fromAddress", "noreply@monargent.app");
+        ReflectionTestUtils.setField(service, "exposeCodesInLog", false);
     }
 
     @Test
@@ -40,9 +45,11 @@ class AuthEmailServiceImplTest {
     }
 
     @Test
-    void sendAuthCodeEmail_mailFailure_fallsBackToConsole() {
+    void sendAuthCodeEmail_mailFailure_throwsControlledError() {
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
         doThrow(new RuntimeException("smtp down")).when(mailSender).send(any(MimeMessage.class));
-        service.sendAuthCodeEmail("a@example.com", "999999", AuthEmailType.REGISTRATION, 10);
+        when(environment.getActiveProfiles()).thenReturn(new String[] {"dev"});
+        assertThrows(EmailSendException.class, () ->
+            service.sendAuthCodeEmail("a@example.com", "999999", AuthEmailType.REGISTRATION, 10));
     }
 }

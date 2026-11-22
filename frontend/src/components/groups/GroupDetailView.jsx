@@ -7,10 +7,12 @@ import { groupService } from '../../services/groupService';
 import apiClient from '../../services/api';
 import GroupCategoryChart from './GroupCategoryChart';
 import { formatPeso } from '../../utils/format';
+import { usePreferences } from '../../context/PreferencesContext';
 import {
   formatAmountFromDigits,
   parseAmountDigits,
   sanitizeAmountDigits,
+  toBaseAmount,
 } from '../../utils/currency';
 import {
   payViaMpAlias,
@@ -52,6 +54,7 @@ const groupSyncFingerprint = (g) => {
 };
 
 const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
+  const { t } = usePreferences();
   const [selectedMember, setSelectedMember] = useState(null);
   const [showAddMember, setShowAddMember] = useState(false);
   const [showMyExpenses, setShowMyExpenses] = useState(false);
@@ -252,7 +255,7 @@ const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
         .map((item) => ({
           categoryId: item.categoryId ? Number(item.categoryId) : null,
           title: item.title.trim(),
-          amount: Number(item.amount),
+          amount: toBaseAmount(Number(item.amount)),
         }));
 
       await groupService.addGuest(group.id, {
@@ -281,7 +284,7 @@ const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
         .map((item) => ({
           categoryId: Number(item.categoryId),
           title: item.title.trim(),
-          amount: Number(item.amount),
+          amount: toBaseAmount(Number(item.amount)),
         }));
 
       if (items.length === 0) {
@@ -498,7 +501,7 @@ const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
         onClick={onBack}
         className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-amber-300"
       >
-        <ChevronLeft size={16} /> Volver a grupos
+        <ChevronLeft size={16} /> {t('groups.backToGroups')}
       </button>
 
       {actionSuccess && (
@@ -514,7 +517,7 @@ const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
         )}
         {isClosed && (
           <div className="mt-2 flex items-center justify-between gap-2">
-            <p className="text-xs font-semibold text-emerald-300">Grupo cerrado — solo historial</p>
+            <p className="text-xs font-semibold text-emerald-300">{t('groups.closedHistoryOnly')}</p>
             {group.owner && (
               <button
                 type="button"
@@ -523,7 +526,7 @@ const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
                 className="inline-flex items-center gap-1 text-xs text-red-300 hover:text-red-200 disabled:opacity-50"
               >
                 <Trash2 size={14} />
-                {deletingGroup ? 'Eliminando...' : 'Eliminar del historial'}
+                {deletingGroup ? t('groups.deleting') : t('groups.deleteFromHistory')}
               </button>
             )}
           </div>
@@ -871,7 +874,7 @@ const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
       )}
 
       {showMyExpenses && (
-        <AppModal open title="Mis gastos" onClose={() => setShowMyExpenses(false)}>
+        <AppModal open title={t('gd.myExpenses')} onClose={() => setShowMyExpenses(false)}>
           <form onSubmit={handleAddMyExpenses} className="space-y-4">
             {myItems.map((item, index) => (
               <div key={index} className="flex gap-2 items-start">
@@ -882,7 +885,7 @@ const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
                       onClick={() => openCategoryModal('my', index)}
                       className="text-xs text-amber-400 hover:underline"
                     >
-                      + Agregar categoría
+                      {t('gd.addCategory')}
                     </button>
                     <select
                       required
@@ -894,7 +897,7 @@ const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
                       }}
                       className={modalInputClass}
                     >
-                      <option value="">Categoría</option>
+                      <option value="">{t('gd.category')}</option>
                       {expenseCategories.map((cat) => (
                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                       ))}
@@ -907,7 +910,7 @@ const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
                       next[index] = { ...next[index], title: e.target.value };
                       setMyItems(next);
                     }}
-                    placeholder="Descripción: Ej. Coca, fernet..."
+                    placeholder={t('gd.descPlaceholder')}
                     className={modalInputClass}
                   />
                   <input
@@ -945,11 +948,11 @@ const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
               onClick={() => setMyItems([...myItems, emptyItem()])}
               className="text-xs text-amber-300 flex items-center gap-1"
             >
-              <Plus size={14} /> Agregar ítem
+              <Plus size={14} /> {t('gd.addItem')}
             </button>
             <ModalActions
               onCancel={() => setShowMyExpenses(false)}
-              submitLabel="Guardar"
+              submitLabel={t('common.save')}
               loading={saving}
             />
           </form>
@@ -957,7 +960,7 @@ const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
       )}
 
       {showAddMember && (
-        <AppModal open title="Añadir miembro" onClose={() => setShowAddMember(false)}>
+        <AppModal open title={t('gd.addMember')} onClose={() => setShowAddMember(false)}>
           <div className="space-y-4 max-h-[70vh] overflow-y-auto">
             <div className="flex gap-2">
               <button
@@ -965,66 +968,66 @@ const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
                 onClick={() => setAddMemberTab('email')}
                 className={`flex-1 rounded-lg py-2 text-sm ${addMemberTab === 'email' ? 'bg-amber-400 text-slate-900 font-semibold' : 'border border-[#284567]'}`}
               >
-                Por correo
+                {t('gd.byEmail')}
               </button>
               <button
                 type="button"
                 onClick={() => setAddMemberTab('guest')}
                 className={`flex-1 rounded-lg py-2 text-sm ${addMemberTab === 'guest' ? 'bg-amber-400 text-slate-900 font-semibold' : 'border border-[#284567]'}`}
               >
-                Sin app
+                {t('gd.noApp')}
               </button>
             </div>
 
             {addMemberTab === 'email' ? (
               <form onSubmit={handleInvite} className="space-y-4">
-                <ModalField label="Correo">
+                <ModalField label={t('gd.email')}>
                   <input
                     type="email"
                     required
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
-                    placeholder="correo@ejemplo.com"
+                    placeholder={t('gd.emailPlaceholder')}
                     className={modalInputClass}
                   />
                 </ModalField>
                 <ModalActions
                   onCancel={() => setShowAddMember(false)}
-                  submitLabel="Enviar invitación"
+                  submitLabel={t('gd.sendInvite')}
                   loading={saving}
                 />
               </form>
             ) : (
               <form onSubmit={handleAddGuest} className="space-y-4">
-                <ModalField label="Nombre">
+                <ModalField label={t('gd.name')}>
                   <input
                     required
                     value={guestForm.name}
                     onChange={(e) => setGuestForm((p) => ({ ...p, name: e.target.value }))}
-                    placeholder="Ej: Juan"
+                    placeholder={t('gd.namePlaceholder')}
                     className={modalInputClass}
                   />
                 </ModalField>
-                <ModalField label="Correo">
+                <ModalField label={t('gd.email')}>
                   <input
                     type="email"
                     required
                     value={guestForm.email}
                     onChange={(e) => setGuestForm((p) => ({ ...p, email: e.target.value }))}
-                    placeholder="correo@ejemplo.com"
+                    placeholder={t('gd.emailPlaceholder')}
                     className={modalInputClass}
                   />
                 </ModalField>
-                <ModalField label="Alias (preferentemente de MP)">
+                <ModalField label={t('gd.aliasLabel')}>
                   <input
                     required
                     value={guestForm.mpAlias}
                     onChange={(e) => setGuestForm((p) => ({ ...p, mpAlias: e.target.value }))}
-                    placeholder="Ej: juan.mp"
+                    placeholder={t('gd.aliasPlaceholder')}
                     className={modalInputClass}
                   />
                 </ModalField>
-                <p className="text-xs text-slate-400">Gastos (opcional)</p>
+                <p className="text-xs text-slate-400">{t('gd.expensesOptional')}</p>
                 {guestForm.items.map((item, index) => (
                   <div key={index} className="rounded-lg border border-[#284567]/60 p-3 space-y-2">
                     <div className="space-y-1">
@@ -1033,7 +1036,7 @@ const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
                         onClick={() => openCategoryModal('guest', index)}
                         className="text-xs text-amber-400 hover:underline"
                       >
-                        + Agregar categoría
+                        {t('gd.addCategory')}
                       </button>
                       <select
                         value={item.categoryId || ''}
@@ -1044,7 +1047,7 @@ const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
                         }}
                         className={modalInputClass}
                       >
-                        <option value="">Categoría (opcional)</option>
+                        <option value="">{t('gd.categoryOptional')}</option>
                         {expenseCategories.map((cat) => (
                           <option key={cat.id} value={cat.id}>{cat.name}</option>
                         ))}
@@ -1057,7 +1060,7 @@ const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
                         items[index] = { ...items[index], title: e.target.value };
                         setGuestForm((p) => ({ ...p, items }));
                       }}
-                      placeholder="Descripción: Ej. Coca, fernet..."
+                      placeholder={t('gd.descPlaceholder')}
                       className={modalInputClass}
                     />
                     <input
@@ -1094,7 +1097,7 @@ const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
                   onClick={() => setGuestForm((p) => ({ ...p, items: [...p.items, emptyItem()] }))}
                   className="text-xs text-amber-300 flex items-center gap-1"
                 >
-                  <Plus size={14} /> Agregar ítem
+                  <Plus size={14} /> {t('gd.addItem')}
                 </button>
                 <ModalActions
                   onCancel={() => setShowAddMember(false)}
@@ -1110,7 +1113,7 @@ const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
       {showCategoryModal && (
         <AppModal
           open
-          title="Nueva categoría"
+          title={t('gd.newCategory')}
           onClose={() => {
             setShowCategoryModal(false);
             setCategoryModalTarget(null);
@@ -1119,10 +1122,10 @@ const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
           zIndex="z-[100]"
         >
           <form onSubmit={handleCreateCategory} className="space-y-4">
-            <ModalField label="Nombre">
+            <ModalField label={t('gd.catName')}>
               <input
                 type="text"
-                placeholder="Ejemplo: Asado, Bebidas..."
+                placeholder={t('gd.catExample')}
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 className={modalInputClass}
@@ -1130,8 +1133,8 @@ const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
                 autoFocus
               />
             </ModalField>
-            <ModalField label="Tipo">
-              <div className={`${modalInputClass} flex items-center text-sm`}>Gastos</div>
+            <ModalField label={t('gd.catType')}>
+              <div className={`${modalInputClass} flex items-center text-sm`}>{t('tx.expenses')}</div>
             </ModalField>
             <ModalActions
               onCancel={() => {
@@ -1139,7 +1142,7 @@ const GroupDetailView = ({ group, onBack, onRefresh, onDeleted, onError }) => {
                 setCategoryModalTarget(null);
                 setNewCategoryName('');
               }}
-              submitLabel="Guardar"
+              submitLabel={t('common.save')}
             />
           </form>
         </AppModal>

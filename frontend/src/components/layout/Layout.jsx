@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { usePreferences } from '../../context/PreferencesContext';
 import UserMenu from './UserMenu';
 import NotificationBell from './NotificationBell';
 import ProfileMoodFace from './ProfileMoodFace';
 import EditNameModal from '../ui/EditNameModal';
+import HelpTip from '../ui/HelpTip';
+import { HELP } from '../../content/helpContent';
 import { getTimeGreeting } from '../../utils/greeting';
 import { getSuggestedName, normalizeDisplayName } from '../../utils/displayName';
 import {
@@ -15,26 +18,44 @@ import {
   ChevronLeft,
   ChevronRight,
   Pencil,
+  Sun,
+  Moon,
+  ArrowLeftRight,
+  ScanLine,
+  Users,
+  ArrowLeft,
 } from 'lucide-react';
 
+
 const NAV_ITEMS = [
-  { path: '/dashboard', label: 'Inicio', icon: House },
-  { path: '/calendar', label: 'Calendario', icon: Calendar },
-  { path: '/goals', label: 'Objetivos', icon: Target },
-  { path: '/recommendations', label: 'IA', icon: Sparkles },
+  { path: '/dashboard', labelKey: 'nav.home', icon: House },
+  { path: '/transactions', label: 'Movimientos', icon: ArrowLeftRight },
+  { path: '/scan', label: 'Subir gasto', icon: ScanLine },
+  { path: '/groups', label: 'Grupos', icon: Users },
+  { path: '/calendar', labelKey: 'nav.calendar', icon: Calendar },
+  { path: '/goals', labelKey: 'nav.goals', icon: Target },
+  { path: '/recommendations', labelKey: 'nav.ai', icon: Sparkles },
 ];
 
-const PAGE_TITLES = {
-  '/dashboard': 'Inicio',
-  '/transactions': 'Movimientos',
-  '/transactions/income': 'Ingresos',
-  '/transactions/expense': 'Gastos',
-  '/calendar': 'Calendario',
-  '/goals': 'Objetivos',
-  '/recommendations': 'Recomendaciones',
-  '/groups': 'Grupos',
-  '/scan': 'Escanear',
+const MOBILE_NAV_ITEMS = (() => {
+  const home = NAV_ITEMS.find((item) => item.path === '/dashboard');
+  const rest = NAV_ITEMS.filter((item) => item.path !== '/dashboard');
+  const middle = Math.ceil(rest.length / 2);
+  return [...rest.slice(0, middle), home, ...rest.slice(middle)].filter(Boolean);
+})();
+
+const PAGE_TITLE_KEYS = {
+  '/dashboard': 'nav.home',
+  '/transactions': 'nav.transactions',
+  '/transactions/income': 'nav.income',
+  '/transactions/expense': 'nav.expense',
+  '/calendar': 'nav.calendar',
+  '/goals': 'nav.goals',
+  '/recommendations': 'nav.recommendations',
+  '/groups': 'nav.groups',
+  '/scan': 'nav.scan',
 };
+
 
 const STORAGE_KEY = 'sidebar_expanded';
 
@@ -42,6 +63,8 @@ const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout, updateProfile, refreshUser } = useAuth();
+  const { theme, currency, language, fx, refreshFxRate, toggleTheme, toggleCurrency, toggleLanguage, t } = usePreferences();
+
 
   const [expanded, setExpanded] = useState(() => {
     try {
@@ -133,9 +156,10 @@ const Layout = ({ children }) => {
       setNameSaving(false);
     }
   };
-  const mobileTitle = PAGE_TITLES[location.pathname] || 'MonArgent';
+  const mobileTitle = PAGE_TITLE_KEYS[location.pathname] ? t(PAGE_TITLE_KEYS[location.pathname]) : 'MonArgent';
   const isDashboard = location.pathname === '/dashboard';
   const timeGreeting = getTimeGreeting();
+
 
   const activeClass =
     'bg-amber-500/15 text-amber-400 border-l-2 border-amber-400';
@@ -149,12 +173,12 @@ const Layout = ({ children }) => {
       {/* Desktop Sidebar */}
       <aside
         className={`hidden md:flex flex-col bg-slate-900/95 backdrop-blur-xl border-r border-slate-700/50 transition-all duration-300 ease-in-out flex-shrink-0 ${
-          expanded ? 'w-64' : 'w-16'
+          expanded ? 'w-56' : 'w-16'
         }`}
       >
         {/* Logo + toggle */}
         <div
-          className={`h-14 flex items-center border-b border-slate-700/50 overflow-hidden ${
+          className={`h-16 flex items-center border-b border-slate-700/50 overflow-hidden ${
             expanded ? 'px-3 gap-2' : 'px-2 justify-center'
           }`}
         >
@@ -187,34 +211,38 @@ const Layout = ({ children }) => {
 
         {/* Nav */}
         <nav className="flex-1 py-4 space-y-1 overflow-hidden">
-          {NAV_ITEMS.map(({ path, label, icon: Icon }) => (
-            <div key={path} className={expanded ? 'px-3' : 'px-2'}>
-              <button
-                onClick={() => handleNav(path)}
-                title={!expanded ? label : undefined}
-                className={`${baseNavClass} ${
-                  isActive(path) ? activeClass : inactiveClass
-                } ${!expanded ? 'justify-center px-0' : ''}`}
-              >
-                <Icon size={18} className="flex-shrink-0" />
-                {expanded && <span className="truncate">{label}</span>}
-              </button>
-            </div>
-          ))}
+          {NAV_ITEMS.map(({ path, labelKey, label: rawLabel, icon: Icon }) => {
+            const label = rawLabel || t(labelKey);
+            return (
+              <div key={path} className={expanded ? 'px-3' : 'px-2'}>
+                <button
+                  onClick={() => handleNav(path)}
+                  title={!expanded ? label : undefined}
+                  className={`${baseNavClass} ${
+                    isActive(path) ? activeClass : inactiveClass
+                  } ${!expanded ? 'justify-center px-0' : ''}`}
+                >
+                  <Icon size={18} className="flex-shrink-0" />
+                  {expanded && <span className="truncate">{label}</span>}
+                </button>
+              </div>
+            );
+          })}
+
         </nav>
       </aside>
 
       {/* Main area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="min-h-16 flex-shrink-0 flex items-center justify-between px-4 md:px-6 py-2 bg-[#081b33] border-b border-[#234063]/50 gap-3">
-          <div className="min-w-0 flex-1">
-            {isDashboard ? (
-              <div className="flex flex-col min-w-0 gap-0.5">
-                <p className="text-xs md:text-sm font-medium text-amber-300/90 leading-tight truncate">
-                  {timeGreeting}
-                </p>
+        <header className="md:h-16 flex-shrink-0 flex flex-col md:flex-row md:items-center justify-between px-4 md:px-6 bg-[#081b33] border-b border-[#234063]/50 gap-3 py-2 md:py-0">
+          <div className="w-full flex items-center justify-between gap-3 min-w-0">
+            <div className="min-w-0 flex-1">
+              {isDashboard ? (
                 <div className="flex items-center gap-1.5 min-w-0">
+                  <p className="text-xs md:text-sm font-medium text-amber-300/90 leading-tight truncate shrink-0">
+                    {timeGreeting}
+                  </p>
                   <p className="text-base md:text-lg font-semibold text-slate-100 leading-tight truncate capitalize">
                     {displayName}
                   </p>
@@ -222,49 +250,142 @@ const Layout = ({ children }) => {
                     type="button"
                     onClick={openNameEdit}
                     className="p-1.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-amber-400/10 transition-colors shrink-0"
-                    aria-label="Editar nombre"
+                    aria-label={t('layout.editName')}
                   >
                     <Pencil size={14} />
                   </button>
                 </div>
+              ) : (
+                <div className="flex items-center gap-2 min-w-0">
+                  <p className="text-xl md:text-2xl font-semibold text-slate-100 leading-tight truncate">
+                    {mobileTitle}
+                  </p>
+                  {location.pathname === '/groups' && (
+                    <HelpTip title={HELP.groups.title} body={HELP.groups.body} align="left" />
+                  )}
+                  {location.pathname.startsWith('/transactions') && (
+                    <HelpTip title={HELP.transactions.title} body={HELP.transactions.body} align="left" />
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <div className="hidden md:flex items-center gap-1.5 sm:gap-2">
+                <button
+                  type="button"
+                  onClick={toggleLanguage}
+                  className="min-w-[40px] h-9 px-2 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-amber-300 hover:bg-white/5 transition-colors"
+                  title={language === 'es' ? 'Switch to English' : 'Cambiar a Español'}
+                  aria-label={language === 'es' ? 'Switch to English' : 'Cambiar a Español'}
+                >
+                  {language === 'es' ? 'ES' : 'EN'}
+                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={toggleCurrency}
+                    className="min-w-[44px] h-9 px-2 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-amber-300 hover:bg-white/5 transition-colors"
+                    title={currency === 'ARS' ? t('currency.dollar') : t('currency.peso')}
+                    aria-label={currency === 'ARS' ? t('currency.dollar') : t('currency.peso')}
+                  >
+                    {currency === 'ARS' ? '$' : 'US$'}
+                  </button>
+                  {currency === 'USD' && (
+                    <button
+                      type="button"
+                      onClick={() => refreshFxRate()}
+                      className="inline-flex items-center h-9 px-2 rounded-lg text-[10px] text-slate-400 hover:text-amber-300 hover:bg-white/5 transition-colors whitespace-nowrap max-w-[140px] sm:max-w-none"
+                      title={fx?.error ? 'Sin cotización, mostrando ARS. Click para reintentar.' : `Cotización oficial DolarAPI${fx?.updatedAt ? ` · ${new Date(fx.updatedAt).toLocaleString('es-AR')}` : ''}. Click para actualizar.`}
+                    >
+                      {fx?.loading ? 'Cotizando...' : fx?.rate ? `US$1=$${Math.round(fx.rate).toLocaleString('es-AR')}` : 'Sin cotización'}
+                    </button>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-300 hover:text-amber-300 hover:bg-white/5 transition-colors"
+                  title={theme === 'dark' ? t('theme.light') : t('theme.dark')}
+                  aria-label={theme === 'dark' ? t('theme.light') : t('theme.dark')}
+                >
+                  {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                </button>
               </div>
-            ) : (
-              <p className="text-xl md:text-2xl font-semibold text-slate-100 leading-tight truncate">
-                {mobileTitle}
-              </p>
-            )}
+              <ProfileMoodFace />
+              <NotificationBell />
+              <UserMenu initials={getInitials()} email={user?.email || ''} onLogout={logout} />
+            </div>
           </div>
 
-          {/* Right side */}
-          <div className="flex items-center gap-2 shrink-0">
-            <ProfileMoodFace />
-            <NotificationBell />
-            <UserMenu initials={getInitials()} onLogout={logout} />
-            {!isDashboard && (
-            <span className="hidden sm:inline-block text-sm text-amber-400 bg-amber-400/10 border border-amber-400/20 px-3 py-1 rounded-full truncate max-w-xs">
-              {user?.email || ''}
-            </span>
+          <div className="md:hidden w-full flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={toggleLanguage}
+              className="min-w-[40px] h-9 px-2 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-amber-300 hover:bg-white/5 transition-colors"
+              title={language === 'es' ? 'Switch to English' : 'Cambiar a Español'}
+              aria-label={language === 'es' ? 'Switch to English' : 'Cambiar a Español'}
+            >
+              {language === 'es' ? 'ES' : 'EN'}
+            </button>
+            <button
+              type="button"
+              onClick={toggleCurrency}
+              className="min-w-[44px] h-9 px-2 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-amber-300 hover:bg-white/5 transition-colors"
+              title={currency === 'ARS' ? t('currency.dollar') : t('currency.peso')}
+              aria-label={currency === 'ARS' ? t('currency.dollar') : t('currency.peso')}
+            >
+              {currency === 'ARS' ? '$' : 'US$'}
+            </button>
+            {currency === 'USD' && (
+              <button
+                type="button"
+                onClick={() => refreshFxRate()}
+                className="inline-flex items-center h-9 px-2 rounded-lg text-[10px] text-slate-400 hover:text-amber-300 hover:bg-white/5 transition-colors whitespace-nowrap"
+                title={fx?.error ? 'Sin cotización, mostrando ARS. Click para reintentar.' : `Cotización oficial DolarAPI${fx?.updatedAt ? ` · ${new Date(fx.updatedAt).toLocaleString('es-AR')}` : ''}. Click para actualizar.`}
+              >
+                {fx?.loading ? 'Cotizando...' : fx?.rate ? `US$1=$${Math.round(fx.rate).toLocaleString('es-AR')}` : 'Sin cotización'}
+              </button>
             )}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-300 hover:text-amber-300 hover:bg-white/5 transition-colors"
+              title={theme === 'dark' ? t('theme.light') : t('theme.dark')}
+              aria-label={theme === 'dark' ? t('theme.light') : t('theme.dark')}
+            >
+              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
           </div>
+
         </header>
 
         {/* Content */}
         <main
-          className="flex-1 overflow-auto bg-gradient-to-b from-[#071b34] to-[#06162b] p-4 pb-24 md:pb-6 md:p-6 lg:p-8"
+          className="flex-1 overflow-auto bg-gradient-to-b from-[#071b34] to-[#06162b] p-4 pb-24 md:pb-6 md:p-6 lg:p-8 relative"
           style={{
             opacity: mounted ? 1 : 0,
             transition: 'opacity 0.3s ease',
           }}
         >
           {children}
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className={`fixed bottom-24 left-4 md:bottom-6 z-30 p-2 text-blue-600 dark:text-white hover:text-amber-500 dark:hover:text-amber-300 transition-colors ${expanded ? 'md:left-60' : 'md:left-20'}`}
+            aria-label={t('layout.back')}
+            title={t('layout.back')}
+          >
+            <ArrowLeft size={24} />
+          </button>
         </main>
 
         {/* Mobile Bottom Navigation */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-[#26415f] bg-[#081b33]/95 backdrop-blur-xl px-2 py-2 pb-safe">
-          <div className="grid grid-cols-4 gap-1">
-            {NAV_ITEMS.map(({ path, label, icon: Icon }) => {
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-[#26415f] bg-[#081b33]/95 backdrop-blur-xl px-1 py-2 pb-safe">
+          <div className="grid gap-0.5" style={{ gridTemplateColumns: `repeat(${MOBILE_NAV_ITEMS.length}, minmax(0, 1fr))` }}>
+            {MOBILE_NAV_ITEMS.map(({ path, labelKey, label: rawLabel, icon: Icon }) => {
               const active = isActive(path);
-
+              const label = rawLabel || t(labelKey);
               return (
                 <button
                   key={path}
@@ -281,6 +402,7 @@ const Layout = ({ children }) => {
                 </button>
               );
             })}
+
           </div>
         </nav>
       </div>

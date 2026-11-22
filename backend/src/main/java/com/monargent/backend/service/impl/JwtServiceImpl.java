@@ -1,11 +1,13 @@
 package com.monargent.backend.service.impl;
 
+import com.monargent.backend.entity.User;
 import com.monargent.backend.service.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,9 +28,42 @@ public class JwtServiceImpl implements JwtService {
     @Value("${jwt.expiration-ms}")
     private long expirationMs;
 
+    /**
+     * Fail fast on a missing, malformed or weak secret instead of booting with a
+     * predictable key. Generate one with: openssl rand -base64 64
+     */
+    @PostConstruct
+    void validateSecret() {
+        if (secretKey == null || secretKey.isBlank()) {
+            throw new IllegalStateException(
+                "JWT_SECRET is required. Generate one with: openssl rand -base64 64"
+            );
+        }
+
+        byte[] keyBytes;
+        try {
+            keyBytes = Decoders.BASE64.decode(secretKey);
+        } catch (RuntimeException ex) {
+            throw new IllegalStateException(
+                "JWT_SECRET must be standard Base64. Generate one with: openssl rand -base64 64",
+                ex
+            );
+        }
+
+        if (keyBytes.length < 32) {
+            throw new IllegalStateException(
+                "JWT_SECRET must decode to at least 32 bytes (256 bits) for HS256."
+            );
+        }
+    }
+
     @Override
     public String generateToken(UserDetails userDetails) {
-        return generateToken(new HashMap<>(), userDetails);
+        Map<String, Object> claims = new HashMap<>();
+        if (userDetails instanceof User user) {
+            claims.put("ver", user.getTokenVersion());
+        }
+        return generateToken(claims, userDetails);
     }
 
     private String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
@@ -50,7 +85,17 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
-        return username.equals(userDetails.getUsername()) && !isTokenExpired(token);
+        if (!username.equals(userDetails.getUsername()) || isTokenExpired(token)) {
+            return false;
+        }
+        if (userDetails instanceof User user) {
+            Object verClaim = extractAllClaims(token).get("ver");
+            if (!(verClaim instanceof Number verNumber)) {
+                return false;
+            }
+            return verNumber.intValue() == user.getTokenVersion();
+        }
+        return true;
     }
 
     private boolean isTokenExpired(String token) {

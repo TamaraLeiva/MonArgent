@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.monargent.backend.enums.VerificationPurpose;
 import com.monargent.backend.repository.VerificationCodeRepository;
+import com.monargent.backend.service.AuthEmailService;
 import com.monargent.backend.support.ApiTestSupport;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
@@ -32,6 +34,9 @@ class AuthRegisterVerifyLoginIntegrationTest {
 
     @Autowired
     private VerificationCodeRepository verificationCodeRepository;
+
+    @MockitoBean
+    private AuthEmailService authEmailService;
 
     @Test
     void registerVerifyLogin_returnsJwt() throws Exception {

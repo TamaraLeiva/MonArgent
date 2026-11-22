@@ -4,36 +4,39 @@ import { Bell, Check, Loader2 } from 'lucide-react';
 import { notificationService } from '../../services/notificationService';
 import { groupService } from '../../services/groupService';
 import { formatNotificationMessage } from '../../utils/notificationFormat';
+import { usePreferences } from '../../context/PreferencesContext';
 
 const notificationStyle = (notification) => {
   const msg = (notification.message || '').toLowerCase();
   const { type } = notification;
+  const baseText = 'text-blue-900 dark:text-blue-100';
 
   if (type === 'PAYMENT' || msg.includes('debés')) {
-    return 'border border-red-500/35 bg-red-400/20 text-red-300';
+    return `border-2 border-red-500/50 bg-red-400/20 ${baseText}`;
   }
   if (type === 'REMINDER' && (msg.includes('cumple') || msg.includes('evento'))) {
-    return 'border border-sky-400/35 bg-sky-400/20 text-sky-200';
+    return `border-2 border-sky-400/50 bg-sky-400/20 ${baseText}`;
   }
   if (type === 'REMINDER' && msg.includes('vence')) {
-    return 'border border-amber-400/35 bg-amber-400/20 text-amber-200';
+    return `border-2 border-amber-400/50 bg-amber-400/20 ${baseText}`;
   }
   if (type === 'REMINDER') {
-    return 'border border-amber-400/30 bg-amber-400/15 text-amber-900 dark:text-amber-100';
+    return `border-2 border-amber-400/45 bg-amber-400/15 ${baseText}`;
   }
   if (type === 'ALERT') {
-    return 'border border-orange-400/30 bg-orange-400/10 text-orange-100';
+    return `border-2 border-orange-400/50 bg-orange-400/20 ${baseText}`;
   }
   if (type === 'GROUP') {
-    return 'border border-amber-400/30 bg-amber-400/5 text-slate-100';
+    return `border-2 border-amber-400/45 bg-amber-400/15 ${baseText}`;
   }
   return notification.read
-    ? 'text-slate-400'
-    : 'text-slate-100 bg-[#1a3457]/50 border border-[#284567]';
+    ? `border-2 border-slate-300/70 bg-slate-200/40 dark:border-[#284567] dark:bg-transparent ${baseText} opacity-80`
+    : `border-2 border-sky-400/45 bg-sky-400/15 ${baseText}`;
 };
 
 const NotificationBell = () => {
   const navigate = useNavigate();
+  const { t } = usePreferences();
   const menuRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -150,8 +153,8 @@ const NotificationBell = () => {
           setOpen((prev) => !prev);
           if (!open) loadData();
         }}
-        className="relative w-9 h-9 rounded-full border border-[#2a4466] bg-[#102946] text-amber-300 flex items-center justify-center"
-        aria-label="Notificaciones"
+        className="relative w-9 h-9 rounded-full text-amber-300 hover:bg-white/5 flex items-center justify-center transition-colors"
+        aria-label={t('layout.notifications')}
       >
         <Bell size={16} />
         {badge > 0 && (
@@ -164,7 +167,7 @@ const NotificationBell = () => {
       {open && (
         <div className="fixed inset-x-0 top-16 bottom-0 z-50 flex flex-col bg-[#0f2543] border-t border-[#284567] shadow-2xl md:absolute md:inset-auto md:right-0 md:top-full md:mt-2 md:bottom-auto md:w-96 md:max-h-[70vh] md:rounded-xl md:border md:overflow-hidden">
           <div className="px-4 py-3 border-b border-[#284567] shrink-0 flex items-center justify-between gap-2">
-            <p className="text-sm font-semibold text-slate-100">Notificaciones</p>
+            <p className="text-sm font-semibold text-slate-100">{t('notifications.title')}</p>
             {unreadOthers > 0 && (
               <button
                 type="button"
@@ -172,7 +175,7 @@ const NotificationBell = () => {
                 onClick={handleMarkAllAsRead}
                 className="text-xs text-amber-300 hover:text-amber-200 disabled:opacity-60 whitespace-nowrap"
               >
-                {markingAll ? 'Marcando...' : 'Marcar todas como leídas'}
+                {markingAll ? t('notifications.marking') : t('notifications.markAllRead')}
               </button>
             )}
           </div>
@@ -185,7 +188,7 @@ const NotificationBell = () => {
           ) : (
             <div className="p-3 sm:p-4 space-y-2">
               {invitations.length === 0 && otherNotifications.length === 0 && (
-                <p className="text-sm text-slate-400 text-center py-6">No tenés notificaciones.</p>
+                <p className="text-sm text-slate-400 text-center py-6">{t('notifications.empty')}</p>
               )}
 
               {invitations.map((inv) => (
@@ -193,10 +196,10 @@ const NotificationBell = () => {
                   key={inv.id}
                   className="rounded-lg border border-amber-400/30 bg-amber-400/5 p-3 space-y-2"
                 >
-                  <p className="text-sm text-slate-100">
+                  <p className="text-sm text-blue-900 dark:text-blue-100">
                     <span className="font-medium">{inv.invitedByName}</span>
-                    {' '}te invitó a{' '}
-                    <span className="font-medium text-amber-300">{inv.groupTitle}</span>
+                    {' '}{t('notifications.invitedYou')}{' '}
+                    <span className="font-medium text-amber-600 dark:text-amber-300">{inv.groupTitle}</span>
                   </p>
                   <div className="flex gap-2">
                     <button
@@ -205,7 +208,7 @@ const NotificationBell = () => {
                       onClick={() => handleAccept(inv.id)}
                       className="flex-1 rounded-lg bg-amber-400 text-slate-900 py-1.5 text-xs font-semibold disabled:opacity-60"
                     >
-                      {actingOn === inv.id ? '...' : 'Aceptar'}
+                      {actingOn === inv.id ? '...' : t('notifications.accept')}
                     </button>
                     <button
                       type="button"
@@ -213,7 +216,7 @@ const NotificationBell = () => {
                       onClick={() => handleReject(inv.id)}
                       className="flex-1 rounded-lg border border-[#284567] text-slate-300 py-1.5 text-xs disabled:opacity-60"
                     >
-                      Rechazar
+                      {t('notifications.reject')}
                     </button>
                   </div>
                 </div>
@@ -232,7 +235,7 @@ const NotificationBell = () => {
                         ? 'border-emerald-500/50 bg-emerald-500/20 text-emerald-300'
                         : 'border-slate-500 hover:border-amber-400 text-transparent hover:text-amber-300'
                     }`}
-                    aria-label={n.read ? 'Leída' : 'Marcar como leída'}
+                    aria-label={n.read ? t('notifications.read') : t('notifications.markRead')}
                   >
                     <Check size={12} />
                   </button>

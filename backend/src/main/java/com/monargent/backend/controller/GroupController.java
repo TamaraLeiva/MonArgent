@@ -113,7 +113,8 @@ public class GroupController {
     ) {
         SettlementProofDownload download = groupService.getSettlementProofDownload(id, fromMemberKey, toMemberKey);
         return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + download.getFilename() + "\"")
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + download.getFilename() + "\"")
+            .header("X-Content-Type-Options", "nosniff")
             .contentType(MediaType.parseMediaType(download.getContentType()))
             .body(download.getResource());
     }

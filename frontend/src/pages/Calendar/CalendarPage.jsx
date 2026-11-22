@@ -10,7 +10,9 @@ import { HELP } from '../../content/helpContent';
 
 import apiClient from '../../services/api';
 
+import { usePreferences } from '../../context/PreferencesContext';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
+
 
 
 
@@ -78,8 +80,10 @@ function groupByDay(transactions) {
 
 
 const CalendarPage = () => {
+  const { t } = usePreferences();
 
   const now = new Date();
+
 
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
 
@@ -116,6 +120,8 @@ const CalendarPage = () => {
   const [saving, setSaving] = useState(false);
 
   const [formError, setFormError] = useState('');
+  const [showAllFixed, setShowAllFixed] = useState(false);
+  const [showAllEvents, setShowAllEvents] = useState(false);
 
   const { askConfirm, confirmDialog } = useConfirmDialog();
 
@@ -267,7 +273,7 @@ const CalendarPage = () => {
 
     if (!fixedTitle.trim() || day < 1 || day > 31) {
 
-      setFormError('Completá título y día (1-31).');
+      setFormError(t('cal.fixedDayError'));
 
       return;
 
@@ -305,7 +311,7 @@ const CalendarPage = () => {
 
     } catch (err) {
 
-      setFormError(err.response?.data?.message || 'No se pudo guardar el gasto fijo.');
+      setFormError(err.response?.data?.message || t('cal.fixedSaveError'));
 
     } finally {
 
@@ -335,7 +341,7 @@ const CalendarPage = () => {
 
     if (!eventTitle.trim() || day < 1 || day > 31 || hour < 0 || hour > 23) {
 
-      setFormError('Completá título, fecha y hora válidos.');
+      setFormError(t('cal.eventFieldsError'));
 
       return;
 
@@ -369,7 +375,7 @@ const CalendarPage = () => {
 
     } catch (err) {
 
-      setFormError(err.response?.data?.message || 'No se pudo guardar el evento.');
+      setFormError(err.response?.data?.message || t('cal.eventSaveError'));
 
     } finally {
 
@@ -384,9 +390,9 @@ const CalendarPage = () => {
   const handleDeleteEvent = async (id) => {
 
     const ok = await askConfirm({
-      title: 'Eliminar evento',
-      message: '¿Querés eliminar este evento?',
-      confirmLabel: 'Eliminar',
+      title: t('cal.deleteEvent'),
+      message: t('cal.deleteEventConfirmSimple'),
+      confirmLabel: t('common.delete'),
       danger: true,
     });
     if (!ok) return;
@@ -399,7 +405,7 @@ const CalendarPage = () => {
 
     } catch {
 
-      setFormError('No se pudo eliminar el evento.');
+      setFormError(t('cal.deleteEventError'));
 
     }
 
@@ -477,8 +483,9 @@ const CalendarPage = () => {
 
       {confirmDialog}
 
-      <div className="text-white max-w-xl mx-auto relative pb-20">
+      <div className="text-white max-w-6xl mx-auto relative pb-20">
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
         <section className="bg-[#0f2543] border border-[#284567] rounded-3xl p-4">
 
           <div className="flex items-center justify-between mb-4">
@@ -585,7 +592,8 @@ const CalendarPage = () => {
 
                           {expenses.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-red-400" />}
 
-                          {dayFixed.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />}
+                          {dayFixed.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-yellow-400" />}
+
 
                           {dayEvents.length > 0 && <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />}
 
@@ -615,7 +623,8 @@ const CalendarPage = () => {
 
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400" />Gasto</span>
 
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400" />Fijo</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-400" />Fijo</span>
+
 
             <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-sky-400" />Evento</span>
 
@@ -623,132 +632,82 @@ const CalendarPage = () => {
 
         </section>
 
-
-
-        <section className="mt-5">
-
-          <h3 className="text-section-title mb-3 flex items-center gap-2">
-            <Repeat size={18} className="text-amber-400" />
-            Gastos fijos del mes
-          </h3>
-
-          <div className="space-y-3">
-
-            {upcomingFixed.length === 0 ? (
-
-              <p className="text-item-meta">Sin gastos fijos. Tocá + para agendar uno.</p>
-
-            ) : (
-
-              upcomingFixed.map((fe) => (
-
-                <article
-                  key={fe.id}
-                  className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/12 via-[#0f2543] to-[#0b2034] p-4 flex items-center gap-4 shadow-[0_0_24px_rgba(251,191,36,0.06)]"
-                >
-
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-300 to-amber-700" />
-
-                  <div className="w-12 h-12 rounded-xl bg-amber-500/15 border border-amber-400/25 flex flex-col items-center justify-center shrink-0 ml-1">
-
-                    <Repeat size={14} className="text-amber-400 mb-0.5" />
-
-                    <span className="text-sm font-amount text-amber-200 leading-none">{fe.dueDay}</span>
-
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-
-                    <p className="text-item-title truncate">{fe.title}</p>
-
-                    <p className="text-item-meta text-amber-200/70">Día {fe.dueDay} de cada mes</p>
-
-                  </div>
-
-                </article>
-
-              ))
-
-            )}
-
-          </div>
-
-        </section>
-
-
-
-        <section className="mt-5">
-
-          <h3 className="text-section-title mb-3 flex items-center gap-2">
-
-            <Star size={18} className="text-sky-400" />
-
-            Eventos
-
-          </h3>
-
-          <div className="space-y-3">
-
-            {monthEvents.length === 0 ? (
-
-              <p className="text-item-meta">Sin eventos este mes. Agregá cumpleaños o recordatorios.</p>
-
-            ) : (
-
-              monthEvents.map((ev) => (
-
-                <article
-                  key={ev.id}
-                  className="relative overflow-hidden rounded-2xl border border-sky-400/30 bg-gradient-to-br from-sky-500/12 via-[#0f2543] to-[#0b2034] p-4 flex items-center justify-between gap-3 shadow-[0_0_24px_rgba(56,189,248,0.06)]"
-                >
-
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-sky-300 to-sky-600" />
-
-                  <div className="flex items-center gap-4 min-w-0 ml-1">
-
-                    <div className="w-12 h-12 rounded-xl bg-sky-500/15 border border-sky-400/25 flex flex-col items-center justify-center shrink-0">
-
-                      <Star size={20} className="text-sky-300" />
-
-                      <span className="text-[10px] font-amount text-sky-200 mt-0.5">{ev.day}</span>
-
+        <div className="space-y-4 min-w-0">
+          <section className="rounded-3xl border border-[#284567] bg-[#0f2543] p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-section-title flex items-center gap-2">
+                <Repeat size={18} className="text-amber-400" />
+                {t('calendar.fixedExpenses')}
+              </h3>
+              {upcomingFixed.length > 4 && (
+                <button type="button" onClick={() => setShowAllFixed(true)} className="text-xs text-amber-300 font-semibold">{t('calendar.showMore')}</button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {upcomingFixed.length === 0 ? (
+                <p className="text-item-meta sm:col-span-2">{t('calendar.noFixed')}</p>
+              ) : (
+                upcomingFixed.slice(0, 4).map((fe) => (
+                  <article
+                    key={fe.id}
+                    className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 flex items-center gap-3"
+                  >
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-300 to-amber-700" />
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-400/25 flex flex-col items-center justify-center shrink-0 ml-1">
+                      <span className="text-sm font-amount text-blue-950 dark:text-slate-100 leading-none">{fe.dueDay}</span>
                     </div>
-
-                    <div className="min-w-0">
-
-                      <p className="text-item-title text-sky-50 truncate">{ev.title}</p>
-
-                      <p className="text-item-meta text-sky-200/75">
-
-                        {formatDisplayDate(ev.day, ev.month, selectedYear)}
-
-                        {ev.eventHour != null ? ` · ${pad2(ev.eventHour)}:00 hs` : ''}
-
-                      </p>
-
-                      {ev.description && (
-                        <p className="text-item-caption text-sky-200/60 truncate">{ev.description}</p>
-                      )}
-
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-blue-950 dark:text-slate-100 truncate">{fe.title}</p>
+                      <p className="text-[11px] text-blue-950 dark:text-slate-100">{t('calendar.dayOfMonth', { day: fe.dueDay })}</p>
                     </div>
+                  </article>
+                ))
+              )}
+            </div>
+          </section>
 
-                  </div>
-
-                  <button type="button" onClick={() => handleDeleteEvent(ev.id)} className="text-sky-300/50 hover:text-red-300 p-1 shrink-0">
-
-                    <X size={16} />
-
-                  </button>
-
-                </article>
-
-              ))
-
-            )}
-
-          </div>
-
-        </section>
+          <section className="rounded-3xl border border-[#284567] bg-[#0f2543] p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-section-title flex items-center gap-2">
+                <Star size={18} className="text-sky-400" />
+                {t('calendar.events')}
+              </h3>
+              {monthEvents.length > 4 && (
+                <button type="button" onClick={() => setShowAllEvents(true)} className="text-xs text-sky-300 font-semibold">{t('calendar.showMore')}</button>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {monthEvents.length === 0 ? (
+                <p className="text-item-meta sm:col-span-2">{t('calendar.noEvents')}</p>
+              ) : (
+                monthEvents.slice(0, 4).map((ev) => (
+                  <article
+                    key={ev.id}
+                    className="relative overflow-hidden rounded-2xl border border-sky-400/30 bg-sky-500/10 p-3 flex items-center justify-between gap-2"
+                  >
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-sky-300 to-sky-600" />
+                    <div className="flex items-center gap-3 min-w-0 ml-1">
+                      <div className="w-10 h-10 rounded-xl bg-sky-500/15 border border-sky-400/25 flex flex-col items-center justify-center shrink-0">
+                        <span className="text-[11px] font-amount text-blue-950 dark:text-slate-100">{ev.day}</span>
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-blue-950 dark:text-slate-100 truncate">{ev.title}</p>
+                        <p className="text-[11px] text-blue-950 dark:text-slate-100 truncate">
+                          {formatDisplayDate(ev.day, ev.month, selectedYear)}
+                          {ev.eventHour != null ? ` · ${pad2(ev.eventHour)}:00` : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => handleDeleteEvent(ev.id)} className="text-sky-600 dark:text-sky-300/50 hover:text-red-400 p-1 shrink-0">
+                      <X size={14} />
+                    </button>
+                  </article>
+                ))
+              )}
+            </div>
+          </section>
+        </div>
+        </div>
 
 
 
@@ -760,7 +719,7 @@ const CalendarPage = () => {
 
           className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-30 w-14 h-14 rounded-full bg-[#E8B923] text-slate-900 shadow-lg flex items-center justify-center hover:brightness-110"
 
-          aria-label="Agregar al calendario"
+          aria-label={t('cal.addToCalendar')}
 
         >
 
@@ -771,15 +730,16 @@ const CalendarPage = () => {
 
 
         {showAddChoice && !addMode && (
-          <AppModal open title="¿Qué querés agregar?" onClose={() => setShowAddChoice(false)}>
+          <AppModal open title={t('cal.whatAdd')} onClose={() => setShowAddChoice(false)}>
             <div className="grid grid-cols-1 gap-3">
               <button
                 type="button"
                 onClick={() => setAddMode('fixed')}
-                className="flex items-center gap-3 rounded-xl border border-orange-400/30 bg-orange-400/10 p-4 text-left hover:border-orange-400/60"
+                className="flex items-center gap-3 rounded-xl border border-yellow-400/30 bg-yellow-400/10 p-4 text-left hover:border-yellow-400/60"
               >
-                <Repeat className="text-orange-300" size={22} />
-                <p className="font-semibold">Gasto fijo</p>
+                <Repeat className="text-yellow-300" size={22} />
+                <p className="font-semibold">{t('cal.fixedLabel')}</p>
+
               </button>
               <button
                 type="button"
@@ -787,7 +747,7 @@ const CalendarPage = () => {
                 className="flex items-center gap-3 rounded-xl border border-sky-400/30 bg-sky-400/10 p-4 text-left hover:border-sky-400/60"
               >
                 <Star className="text-sky-300" size={22} />
-                <p className="font-semibold">Evento</p>
+                <p className="font-semibold">{t('cal.eventLabel')}</p>
               </button>
             </div>
           </AppModal>
@@ -798,23 +758,23 @@ const CalendarPage = () => {
             open
             title={
               <span className="inline-flex items-center justify-center gap-2">
-                Gasto fijo
+                {t('cal.fixedLabel')}
                 <HelpTip title={HELP.calendar.title} body={HELP.calendar.body} align="left" />
               </span>
             }
             onClose={() => { setShowAddChoice(false); setAddMode(null); }}
           >
             <form onSubmit={handleSaveFixed} className="space-y-4">
-              <ModalField label="Título">
+              <ModalField label={t('cal.titleLabel')}>
                 <input
                   required
                   value={fixedTitle}
                   onChange={(e) => setFixedTitle(e.target.value)}
-                  placeholder="Ejemplo: Cuota de facultad"
+                  placeholder={t('cal.fixedPlaceholder')}
                   className={modalInputClass}
                 />
               </ModalField>
-              <ModalField label="Día del mes">
+              <ModalField label={t('cal.dayOfMonthLabel')}>
                 <input
                   type="number"
                   min={1}
@@ -828,7 +788,7 @@ const CalendarPage = () => {
               {formError && <p className="text-sm text-red-400">{formError}</p>}
               <ModalActions
                 onCancel={() => { setShowAddChoice(false); setAddMode(null); }}
-                submitLabel="Guardar"
+                submitLabel={t('common.save')}
                 loading={saving}
               />
             </form>
@@ -840,32 +800,32 @@ const CalendarPage = () => {
             open
             title={
               <span className="inline-flex items-center justify-center gap-2">
-                Evento
+                {t('cal.eventLabel')}
                 <HelpTip title={HELP.calendar.title} body={HELP.calendar.body} align="left" />
               </span>
             }
             onClose={() => { setShowAddChoice(false); setAddMode(null); }}
           >
             <form onSubmit={handleSaveEvent} className="space-y-4">
-              <ModalField label="Título">
+              <ModalField label={t('cal.titleLabel')}>
                 <input
                   required
                   value={eventTitle}
                   onChange={(e) => setEventTitle(e.target.value)}
-                  placeholder="Ejemplo: Aniversario"
+                  placeholder={t('cal.eventTitlePlaceholder')}
                   className={modalInputClass}
                 />
               </ModalField>
-              <ModalField label="Descripción">
+              <ModalField label={t('cal.description')}>
                 <textarea
                   value={eventDescription}
                   onChange={(e) => setEventDescription(e.target.value)}
-                  placeholder="(Opcional)"
+                  placeholder={t('cal.optional')}
                   rows={2}
                   className={`${modalInputClass} resize-none`}
                 />
               </ModalField>
-              <ModalField label="Fecha">
+              <ModalField label={t('cal.date')}>
                 <input
                   type="date"
                   required
@@ -880,7 +840,7 @@ const CalendarPage = () => {
                   className={modalInputClass}
                 />
               </ModalField>
-              <ModalField label="Hora">
+              <ModalField label={t('cal.time')}>
                 <input
                   type="time"
                   required
@@ -892,10 +852,56 @@ const CalendarPage = () => {
               {formError && <p className="text-sm text-red-400">{formError}</p>}
               <ModalActions
                 onCancel={() => { setShowAddChoice(false); setAddMode(null); }}
-                submitLabel="Guardar"
+                submitLabel={t('common.save')}
                 loading={saving}
               />
             </form>
+          </AppModal>
+        )}
+
+        {showAllFixed && (
+          <AppModal open title={t('calendar.fixed')} onClose={() => setShowAllFixed(false)}>
+            <div className="space-y-3 max-h-[60vh] overflow-auto pr-1">
+              {upcomingFixed.map((fe) => (
+                <article key={fe.id} className="relative overflow-hidden rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 flex items-center gap-3">
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-amber-300 to-amber-700" />
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-400/25 flex items-center justify-center shrink-0 ml-1">
+                    <span className="text-sm font-amount text-blue-950 dark:text-slate-100">{fe.dueDay}</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold truncate">{fe.title}</p>
+                    <p className="text-[11px] text-blue-950 dark:text-slate-100">{t('calendar.dayOfEachMonth', { day: fe.dueDay })}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </AppModal>
+        )}
+
+        {showAllEvents && (
+          <AppModal open title={t('calendar.monthEvents')} onClose={() => setShowAllEvents(false)}>
+            <div className="space-y-3 max-h-[60vh] overflow-auto pr-1">
+              {monthEvents.map((ev) => (
+                <article key={ev.id} className="relative overflow-hidden rounded-2xl border border-sky-400/30 bg-sky-500/10 p-3 flex items-center justify-between gap-2">
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-sky-300 to-sky-600" />
+                  <div className="flex items-center gap-3 min-w-0 ml-1">
+                    <div className="w-10 h-10 rounded-xl bg-sky-500/15 border border-sky-400/25 flex items-center justify-center shrink-0">
+                      <span className="text-[11px] font-amount text-sky-200">{ev.day}</span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-sky-900 dark:text-sky-50 truncate">{ev.title}</p>
+                      <p className="text-[11px] text-sky-700 dark:text-sky-200/75 truncate">
+                        {formatDisplayDate(ev.day, ev.month, selectedYear)}
+                        {ev.eventHour != null ? ` · ${pad2(ev.eventHour)}:00` : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => handleDeleteEvent(ev.id)} className="text-sky-600 dark:text-sky-300/50 hover:text-red-400 p-1 shrink-0">
+                    <X size={14} />
+                  </button>
+                </article>
+              ))}
+            </div>
           </AppModal>
         )}
 

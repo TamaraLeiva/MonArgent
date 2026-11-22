@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Loader2 } from 'lucide-react';
 import AuthLayout from '../../components/auth/AuthLayout';
+import { usePreferences } from '../../context/PreferencesContext';
 
 const ForgotPasswordPage = () => {
   const { requestPasswordReset } = useAuth();
+  const { t } = usePreferences();
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -17,7 +19,7 @@ const ForgotPasswordPage = () => {
     try {
       await requestPasswordReset(email);
     } catch (error) {
-      setErrorMsg(error.response?.data?.message || 'No se pudo enviar el código de recuperación.');
+      setErrorMsg(error.response?.data?.message || t('auth.forgotError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -26,21 +28,21 @@ const ForgotPasswordPage = () => {
   return (
     <AuthLayout
       backTo="/login"
-      backLabel="← Volver al inicio de sesión"
-      title="Recuperar contraseña"
-      subtitle="Te enviaremos un código de 6 dígitos a tu correo."
+      backLabel={t('auth.backToLogin')}
+      title={t('auth.forgotTitle')}
+      subtitle={t('auth.forgotSubtitle')}
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label className="block font-label-sm text-label-sm text-on-surface-variant mb-2">
-            Correo electrónico
+            {t('auth.email')}
           </label>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="MonArgent@example.com"
+            placeholder={t('auth.emailPlaceholder')}
             className="w-full rounded-lg input-recessed border-none focus:ring-1 focus:ring-primary text-on-surface px-4 py-3 transition-all placeholder:text-surface-container-highest"
           />
         </div>
@@ -59,10 +61,10 @@ const ForgotPasswordPage = () => {
           {isSubmitting ? (
             <>
               <Loader2 className="animate-spin" size={18} />
-              <span>Enviando...</span>
+              <span>{t('auth.sending')}</span>
             </>
           ) : (
-            'Enviar código'
+            t('auth.sendCode')
           )}
         </button>
       </form>

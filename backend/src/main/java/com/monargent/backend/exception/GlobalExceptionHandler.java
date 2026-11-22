@@ -45,6 +45,20 @@ public class GlobalExceptionHandler {
         Map.entry("movements", "Movimientos")
     );
 
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ApiErrorResponse> handleTooManyRequests(TooManyRequestsException exception, HttpServletRequest request) {
+        return ResponseEntity
+            .status(exception.getStatus())
+            .header("Retry-After", String.valueOf(exception.getRetryAfterSeconds()))
+            .body(ApiErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(exception.getStatus().value())
+                .error(spanishStatusLabel(exception.getStatus()))
+                .message(exception.getMessage())
+                .path(request.getRequestURI())
+                .build());
+    }
+
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiErrorResponse> handleApiException(ApiException exception, HttpServletRequest request) {
         return ResponseEntity
@@ -150,6 +164,7 @@ public class GlobalExceptionHandler {
             case FORBIDDEN -> "Acceso denegado";
             case NOT_FOUND -> "No encontrado";
             case CONFLICT -> "Conflicto";
+            case TOO_MANY_REQUESTS -> "Demasiadas solicitudes";
             case SERVICE_UNAVAILABLE -> "Servicio no disponible";
             case BAD_GATEWAY -> "Error de gateway";
             case INTERNAL_SERVER_ERROR -> "Error interno";

@@ -3,7 +3,9 @@ import { Link, useSearchParams } from 'react-router-dom';
 import AuthLayout from '../../components/auth/AuthLayout';
 import { formatPeso } from '../../utils/format';
 import { payViaMpAlias } from '../../utils/mercadoPagoPay';
+import { usePreferences } from '../../context/PreferencesContext';
 const GuestPayPage = () => {
+  const { t } = usePreferences();
   const [params] = useSearchParams();
   const alias = params.get('alias') || '';
   const creditor = params.get('to') || 'el cobrador';
@@ -36,20 +38,20 @@ const GuestPayPage = () => {
     payViaMpAlias(alias, creditor, amount).catch(() => {});
   };
   const statusMessage = {
-    ok: 'Pago registrado en Mercado Pago. Gracias.',
-    pending: 'Tu pago está pendiente de confirmación.',
-    error: 'El pago no se completó. Podés intentar de nuevo.',
+    ok: t('pay.registeredOk'),
+    pending: t('pay.pending'),
+    error: t('pay.error'),
   }[status];
 
   return (
     <AuthLayout
-      title="Pagar deuda"
-      subtitle={group ? `Grupo: ${group}` : undefined}
+      title={t('pay.title')}
+      subtitle={group ? t('pay.group', { group }) : undefined}
       footer={
         <p className="text-sm text-on-surface-variant">
-          ¿Ya tenés cuenta?{' '}
+          {t('auth.haveAccount')}{' '}
           <Link to="/login" className="text-primary hover:underline">
-            Iniciar sesión
+            {t('auth.login')}
           </Link>
         </p>
       }
@@ -62,26 +64,26 @@ const GuestPayPage = () => {
 
       {formattedAmount ? (
         <div className="text-center space-y-1">
-          <p className="text-on-surface-variant text-sm">Monto a transferir</p>
+          <p className="text-on-surface-variant text-sm">{t('pay.amountToTransfer')}</p>
           <p className="text-3xl font-semibold text-primary">{formattedAmount}</p>
-          <p className="text-on-surface-variant text-sm">a {creditor}</p>
+          <p className="text-on-surface-variant text-sm">{t('pay.to', { name: creditor })}</p>
         </div>
       ) : (
         <p className="text-sm text-on-surface-variant text-center">
-          Revisá el monto en el correo que recibiste.
+          {t('pay.checkAmount')}
         </p>
       )}
 
       {alias && (
         <div className="rounded-lg border border-white/10 bg-white/5 p-4 space-y-2">
-          <p className="text-xs text-on-surface-variant uppercase tracking-wide">Alias Mercado Pago</p>
+          <p className="text-xs text-on-surface-variant uppercase tracking-wide">{t('pay.mpAlias')}</p>
           <p className="text-lg font-amount break-all">{alias}</p>
           <button
             type="button"
             onClick={copyAlias}
             className="w-full rounded-lg border border-primary/40 text-primary py-2 text-sm hover:bg-primary/10 transition-colors"
           >
-            {copied ? 'Alias copiado' : 'Copiar alias'}
+            {copied ? t('pay.aliasCopied') : t('pay.copyAlias')}
           </button>
         </div>
       )}
@@ -92,22 +94,22 @@ const GuestPayPage = () => {
           onClick={openMercadoPago}
           className="w-full rounded-lg bg-primary text-slate-900 py-3 text-sm font-semibold hover:opacity-90 transition-opacity"
         >
-          Abrir Mercado Pago y transferir
+          {t('pay.openMp')}
         </button>
         <p className="text-xs text-on-surface-variant text-center">
-          En Mercado Pago elegí &quot;Transferir&quot; y pegá el alias del cobrador.
+          {t('pay.mpHint')}
         </p>
       </div>
 
       <div className="pt-2 border-t border-white/10 space-y-2">
         <p className="text-sm text-on-surface-variant text-center">
-          Registrate en MonArgent para ver tus grupos y gastos en un solo lugar.
+          {t('pay.registerPrompt')}
         </p>
         <Link
           to="/register"
           className="block w-full text-center rounded-lg border border-white/20 py-2 text-sm hover:bg-white/5 transition-colors"
         >
-          Crear cuenta gratis
+          {t('pay.createFree')}
         </Link>
       </div>
     </AuthLayout>

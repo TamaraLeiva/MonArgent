@@ -2,8 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import AuthLayout from '../../components/auth/AuthLayout';
 import api from '../../services/api';
+import { usePreferences } from '../../context/PreferencesContext';
 
 export default function GuestConfirmSettlementPage() {
+  const { t } = usePreferences();
   const [params] = useSearchParams();
   const token = params.get('token') || '';
   const [status, setStatus] = useState('loading');
@@ -12,36 +14,36 @@ export default function GuestConfirmSettlementPage() {
   useEffect(() => {
     if (!token) {
       setStatus('error');
-      setMessage('El enlace de confirmación no es válido.');
+      setMessage(t('pay.invalidLink'));
       return;
     }
 
     api.post('/public/groups/guest-settlements/confirm', { token })
       .then((response) => {
         setStatus('ok');
-        setMessage(response.data?.message || 'Pago confirmado correctamente.');
+        setMessage(response.data?.message || t('pay.confirmedOk'));
       })
       .catch((error) => {
         setStatus('error');
-        setMessage(error.response?.data?.message || 'No pudimos confirmar el pago.');
+        setMessage(error.response?.data?.message || t('pay.confirmError'));
       });
   }, [token]);
 
   return (
     <AuthLayout
-      title="Confirmar cobro"
-      subtitle="Gastos grupales"
+      title={t('pay.confirmTitle')}
+      subtitle={t('pay.confirmSubtitle')}
       footer={(
         <p className="text-sm text-on-surface-variant">
-          ¿Querés ver tus grupos en la app?{' '}
+          {t('pay.wantSeeGroups')}{' '}
           <Link to="/register" className="text-primary hover:underline">
-            Crear cuenta
+            {t('auth.register')}
           </Link>
         </p>
       )}
     >
       {status === 'loading' && (
-        <p className="text-sm text-slate-300 text-center">Confirmando pago…</p>
+        <p className="text-sm text-slate-300 text-center">{t('pay.confirming')}</p>
       )}
       {status === 'ok' && (
         <p className="text-sm text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-4 py-3 text-center">

@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { KeyRound, Loader2, Eye, EyeOff } from 'lucide-react';
 import AuthLayout from '../../components/auth/AuthLayout';
+import { usePreferences } from '../../context/PreferencesContext';
 
 const ResetPasswordPage = () => {
   const { resetPassword, resendPasswordResetCode } = useAuth();
+  const { t } = usePreferences();
 
   const [code, setCode] = useState(new Array(6).fill(''));
   const [password, setPassword] = useState('');
@@ -27,10 +29,10 @@ const ResetPasswordPage = () => {
 
   if (!userEmail) {
     return (
-      <AuthLayout title="Recuperar acceso" subtitle="No hay una recuperación en curso.">
+      <AuthLayout title={t('auth.recoverAccess')} subtitle={t('auth.noRecovery')}>
         <div className="text-center space-y-4">
           <Link to="/forgot-password" className="text-primary hover:underline font-medium">
-            Solicitar código
+            {t('auth.requestCode')}
           </Link>
         </div>
       </AuthLayout>
@@ -62,7 +64,7 @@ const ResetPasswordPage = () => {
 
     const fullCode = code.join('');
     if (fullCode.length !== 6) {
-      setErrorMsg('Completá los 6 dígitos del código.');
+      setErrorMsg(t('auth.codeDigits'));
       return;
     }
 
@@ -70,7 +72,7 @@ const ResetPasswordPage = () => {
     try {
       await resetPassword({ code: fullCode, password, passwordConfirm });
     } catch (error) {
-      setErrorMsg(error.response?.data?.message || 'Código inválido o vencido.');
+      setErrorMsg(error.response?.data?.message || t('auth.invalidCode'));
     } finally {
       setIsSubmitting(false);
     }
@@ -82,9 +84,9 @@ const ResetPasswordPage = () => {
     setIsResending(true);
     try {
       await resendPasswordResetCode();
-      setSuccessMsg('Te enviamos un nuevo código de recuperación.');
+      setSuccessMsg(t('auth.newCodeSent'));
     } catch (error) {
-      setErrorMsg(error.response?.data?.message || 'No se pudo reenviar el código.');
+      setErrorMsg(error.response?.data?.message || t('auth.resendError'));
     } finally {
       setIsResending(false);
     }
@@ -93,11 +95,11 @@ const ResetPasswordPage = () => {
   return (
     <AuthLayout
       backTo="/forgot-password"
-      backLabel="← Cambiar correo"
-      title="Nueva contraseña"
+      backLabel={t('auth.changeEmail')}
+      title={t('auth.resetTitle')}
       subtitle={(
         <>
-          Ingresá el código enviado a{' '}
+          {t('auth.resetSubtitle')}{' '}
           <span className="text-on-surface font-medium break-all">{userEmail}</span>
         </>
       )}
@@ -125,7 +127,7 @@ const ResetPasswordPage = () => {
 
         <div>
           <label className="block font-label-sm text-label-sm text-on-surface-variant mb-2">
-            Nueva contraseña
+            {t('auth.newPassword')}
           </label>
           <div className="relative">
             <input
@@ -134,7 +136,7 @@ const ResetPasswordPage = () => {
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mínimo 8 caracteres"
+              placeholder={t('auth.minChars')}
               className="w-full rounded-lg input-recessed border-none focus:ring-1 focus:ring-primary text-on-surface px-4 py-3 pr-12 transition-all placeholder:text-surface-container-highest"
             />
             <button
@@ -149,7 +151,7 @@ const ResetPasswordPage = () => {
 
         <div>
           <label className="block font-label-sm text-label-sm text-on-surface-variant mb-2">
-            Repetir contraseña
+            {t('auth.repeatPassword')}
           </label>
           <div className="relative">
             <input
@@ -158,7 +160,7 @@ const ResetPasswordPage = () => {
               minLength={8}
               value={passwordConfirm}
               onChange={(e) => setPasswordConfirm(e.target.value)}
-              placeholder="Repetí la contraseña"
+              placeholder={t('auth.repeatPassword')}
               className="w-full rounded-lg input-recessed border-none focus:ring-1 focus:ring-primary text-on-surface px-4 py-3 pr-12 transition-all placeholder:text-surface-container-highest"
             />
             <button
@@ -188,20 +190,20 @@ const ResetPasswordPage = () => {
           disabled={isSubmitting}
           className="w-full bg-primary-container text-on-primary-container font-title-md py-4 rounded-lg shadow-lg hover:brightness-110 active:scale-[0.98] transition-all flex justify-center items-center gap-2"
         >
-          {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : 'Restablecer contraseña'}
+          {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : t('auth.resetPassword')}
         </button>
       </form>
 
       <div className="text-center">
         <p className="font-label-sm text-on-surface-variant">
-          ¿No te llegó el correo?{' '}
+          {t('auth.didntGetEmail')}{' '}
           <button
             type="button"
             disabled={isResending}
             onClick={handleResend}
             className="text-primary font-bold hover:underline bg-transparent border-none outline-none cursor-pointer"
           >
-            {isResending ? 'Reenviando...' : 'Reenviar código'}
+            {isResending ? t('auth.resending') : t('auth.resendCode')}
           </button>
         </p>
       </div>

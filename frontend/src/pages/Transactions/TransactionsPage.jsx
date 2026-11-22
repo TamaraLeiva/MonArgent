@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useTransactions } from '../../context/TransactionContext';
+import { usePreferences } from '../../context/PreferencesContext';
 import Layout from '../../components/layout/Layout';
+
 import MonthYearPicker from '../../components/ui/MonthYearPicker';
 import useLiveRefresh from '../../hooks/useLiveRefresh';
 import { Plus, Trash2, Edit2, Loader2, Calendar } from 'lucide-react';
@@ -17,16 +19,18 @@ import {
   formatAmountFromDigits,
   parseAmountDigits,
   sanitizeAmountDigits,
+  toBaseAmount,
 } from '../../utils/currency';
+
 import { formatPesoSigned } from '../../utils/format';
 import AppModal, { ModalActions, ModalField, modalInputClass } from '../../components/ui/AppModal';
 import useConfirmDialog from '../../hooks/useConfirmDialog';
 
-const transactionModalTitle = (editingId, lockedType) => {
-  if (editingId) return 'Editar transacción';
-  if (lockedType === 'INCOME') return 'Registrar ingreso';
-  if (lockedType === 'EXPENSE') return 'Registrar gasto';
-  return 'Nueva transacción';
+const transactionModalTitle = (t, editingId, lockedType) => {
+  if (editingId) return t('tx.edit');
+  if (lockedType === 'INCOME') return t('tx.newIncome');
+  if (lockedType === 'EXPENSE') return t('tx.newExpense');
+  return t('tx.new');
 };
 
 const emptyForm = () => {
@@ -45,8 +49,10 @@ const emptyForm = () => {
 };
 
 const TransactionsPage = () => {
+  const { t } = usePreferences();
   const {
     transactions,
+
     categories,
     loading,
     fetchTransactions,
@@ -117,7 +123,7 @@ const TransactionsPage = () => {
         }));
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Error al crear categoría');
+      setError(err.response?.data?.message || t('tx.createCatError'));
     }
   };
 
@@ -202,12 +208,13 @@ const TransactionsPage = () => {
     e.preventDefault();
 
     const parsedAmount = parseAmountDigits(formData.amountDigits);
+    const baseAmount = toBaseAmount(parsedAmount);
     if (!formData.title || !formData.categoryId || !formData.type || !formData.date) {
-      setError('Completá todos los campos requeridos.');
+      setError(t('tx.requiredFields'));
       return;
     }
-    if (Number.isNaN(parsedAmount) || parsedAmount <= 0) {
-      setError('Ingresá un monto válido mayor a cero.');
+    if (Number.isNaN(baseAmount) || baseAmount <= 0) {
+      setError(t('tx.amountGtZero'));
       return;
     }
 
@@ -217,7 +224,8 @@ const TransactionsPage = () => {
       const payload = {
         title: formData.title,
         description: null,
-        amount: parsedAmount,
+        amount: baseAmount,
+
         date: formData.date,
         categoryId: parseInt(formData.categoryId, 10),
         type: lockedType || formData.type,
@@ -232,7 +240,7 @@ const TransactionsPage = () => {
       setShowModal(false);
       fetchTransactions(month, year, filterCategoryId || null, effectiveFilterType || null);
     } catch (err) {
-      setError(err.response?.data?.message || 'Error al guardar la transacción.');
+      setError(err.response?.data?.message || t('tx.saveError'));
     } finally {
       setSubmitting(false);
     }
@@ -240,9 +248,9 @@ const TransactionsPage = () => {
 
   const handleDelete = async (id) => {
     const ok = await askConfirm({
-      title: 'Eliminar transacción',
-      message: '¿Querés eliminar esta transacción? No se puede deshacer.',
-      confirmLabel: 'Eliminar',
+      title: t('transactions.delete'),
+      message: t('transactions.deleteConfirm'),
+      confirmLabel: t('common.delete'),
       danger: true,
     });
     if (!ok) return;
@@ -250,7 +258,7 @@ const TransactionsPage = () => {
       await deleteTransaction(id);
       fetchTransactions(month, year, filterCategoryId || null, effectiveFilterType || null);
     } catch (err) {
-      setError(err.response?.data?.message || 'Error al eliminar.');
+      setError(err.response?.data?.message || t('tx.deleteError'));
     }
   };
 
@@ -258,40 +266,21 @@ const TransactionsPage = () => {
     <Layout>
       {confirmDialog}
       <div className="max-w-7xl mx-auto px-2 sm:px-0">
-        {/* Header */}
-        <div className={`flex mb-6 ${lockedType ? 'justify-end' : 'justify-between items-center'}`}>
-          {!lockedType && (
-            <h1 className="text-2xl sm:text-3xl font-bold text-white">Movimientos</h1>
-          )}
-          {!isReadOnlyList && (
-            <button
-              onClick={() => handleOpenModal()}
-              className={`flex items-center justify-center bg-gradient-to-r from-amber-400 to-amber-500 text-slate-900 rounded-full font-medium hover:from-amber-300 hover:to-amber-400 transition shadow-lg ${
-                lockedType ? 'w-11 h-11' : 'gap-2 px-4 py-2 rounded-lg'
-              }`}
-              aria-label={lockedType === 'INCOME' ? 'Registrar ingreso' : lockedType === 'EXPENSE' ? 'Registrar gasto' : 'Nueva transacción'}
-            >
-              <Plus size={lockedType ? 22 : 18} />
-              {!lockedType && <span className="hidden sm:inline">Nueva</span>}
-            </button>
-          )}
-        </div>
-
         {/* Filters */}
-        <div className={`grid gap-3 mb-6 ${lockedType ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 md:grid-cols-3'}`}>
+        <div className={`grid gap-3 mb-6 items-end ${lockedType ? 'grid-cols-1 sm:grid-cols-[1fr_1fr_auto]' : 'grid-cols-1 sm:grid-cols-3'}`}>
           <MonthYearPicker
-            label="Período"
+            label={t('transactions.period')}
             month={month}
             year={year}
             onChange={(m, y) => { setMonth(m); setYear(y); }}
           />
-          <div className="flex items-end gap-2">
+          <div className="flex items-end gap-2 min-w-0">
             <select
               value={filterCategoryId}
               onChange={(e) => setFilterCategoryId(e.target.value)}
-              className="flex-1 px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition"
+              className="flex-1 h-10 px-3 py-2 bg-[#162238] border border-[#284567] rounded-xl text-sm text-slate-100 focus:outline-none focus:border-amber-400 transition"
             >
-              <option value="">Todas las categorías</option>
+              <option value="">{t('transactions.allCategories')}</option>
               {(effectiveFilterType
                 ? categories.filter((cat) => cat.type === effectiveFilterType)
                 : categories
@@ -302,35 +291,50 @@ const TransactionsPage = () => {
               ))}
             </select>
             {!isReadOnlyList && !lockedType && (
-            <button
-              onClick={() => { setNewCategoryType(effectiveFilterType || 'EXPENSE'); setShowCategoryModal(true); }}
-              title="Agregar categoría"
-              className="px-3 py-2 bg-amber-500 text-slate-900 rounded-lg hover:opacity-90"
-            >
-              <Plus size={16} />
-            </button>
+              <button
+                onClick={() => { setNewCategoryType(effectiveFilterType || 'EXPENSE'); setShowCategoryModal(true); }}
+                title={t('transactions.addCategory')}
+                className="px-3 h-10 bg-amber-500 text-slate-900 rounded-lg hover:opacity-90 shrink-0"
+              >
+                <Plus size={16} />
+              </button>
             )}
           </div>
-          {!lockedType && (
-              <select
-                value={filterType}
-                onChange={(e) => {
-                  setFilterType(e.target.value);
-                  if (e.target.value === '') setFilterCategoryId('');
-                }}
-                className="px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400 transition"
-              >
-                <option value="">Todos los tipos</option>
-                <option value="INCOME">Ingresos</option>
-                <option value="EXPENSE">Gastos</option>
-              </select>
+          {!lockedType ? (
+            <select
+              value={filterType}
+              onChange={(e) => {
+                setFilterType(e.target.value);
+                if (e.target.value === '') setFilterCategoryId('');
+              }}
+              className="h-10 px-3 py-2 bg-[#162238] border border-[#284567] rounded-xl text-sm text-slate-100 focus:outline-none focus:border-amber-400 transition"
+            >
+              <option value="">{t('transactions.allTypes')}</option>
+              <option value="INCOME">{t('transactions.income')}</option>
+              <option value="EXPENSE">{t('transactions.expense')}</option>
+            </select>
+          ) : (
+            <span className="hidden sm:block" />
           )}
         </div>
+
+        {!isReadOnlyList && (
+          <button
+            type="button"
+            onClick={() => handleOpenModal()}
+            className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-30 w-14 h-14 rounded-full bg-[#E8B923] text-slate-900 shadow-lg flex items-center justify-center hover:brightness-110"
+            aria-label={lockedType === 'INCOME' ? t('tx.newIncome') : lockedType === 'EXPENSE' ? t('tx.newExpense') : t('tx.new')}
+            title={lockedType === 'INCOME' ? t('tx.newIncome') : lockedType === 'EXPENSE' ? t('tx.newExpense') : t('tx.new')}
+          >
+            <Plus size={28} strokeWidth={2.5} />
+          </button>
+        )}
 
         {showCategoryModal && (
           <AppModal
             open
-            title="Nueva categoría"
+            title={t('transactions.newCategory')}
+
             onClose={() => setShowCategoryModal(false)}
             zIndex="z-[100]"
           >
@@ -341,13 +345,13 @@ const TransactionsPage = () => {
               }}
               className="space-y-4"
             >
-              <ModalField label="Nombre">
+              <ModalField label={t('tx.name')}>
                 <input
                   type="text"
                   placeholder={
                     (effectiveFilterType || newCategoryType) === 'INCOME'
-                      ? 'Ejemplo: Sueldo'
-                      : 'Ejemplo: Comida'
+                      ? t('tx.salaryExample')
+                      : t('tx.foodExample')
                   }
                   value={newCategoryName}
                   onChange={(e) => setNewCategoryName(e.target.value)}
@@ -356,24 +360,24 @@ const TransactionsPage = () => {
                 />
               </ModalField>
               {effectiveFilterType ? (
-                <ModalField label="Tipo">
+                <ModalField label={t('tx.type')}>
                   <div className={`${modalInputClass} flex items-center text-sm`}>
-                    {effectiveFilterType === 'INCOME' ? 'Ingresos' : 'Gastos'}
+                    {effectiveFilterType === 'INCOME' ? t('tx.incomes') : t('tx.expenses')}
                   </div>
                 </ModalField>
               ) : (
-                <ModalField label="Tipo">
+                <ModalField label={t('tx.type')}>
                   <select
                     value={newCategoryType}
                     onChange={(e) => setNewCategoryType(e.target.value)}
                     className={modalInputClass}
                   >
-                    <option value="INCOME">Ingresos</option>
-                    <option value="EXPENSE">Gastos</option>
+                    <option value="INCOME">{t('tx.incomes')}</option>
+                    <option value="EXPENSE">{t('tx.expenses')}</option>
                   </select>
                 </ModalField>
               )}
-              <ModalActions onCancel={() => setShowCategoryModal(false)} submitLabel="Guardar" />
+              <ModalActions onCancel={() => setShowCategoryModal(false)} submitLabel={t('common.save')} />
             </form>
           </AppModal>
         )}
@@ -388,60 +392,59 @@ const TransactionsPage = () => {
             <Calendar size={40} className="opacity-40" />
             <p className="text-sm">
               {lockedType === 'INCOME'
-                ? 'Sin ingresos en este período.'
+                ? t('transactions.noIncome')
                 : lockedType === 'EXPENSE'
-                  ? 'Sin gastos en este período.'
-                  : 'Sin transacciones en este período.'}
+                  ? t('transactions.noExpense')
+                  : t('transactions.noMoves')}
             </p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {visibleTransactions.map((tx) => (
-              <div
-                key={tx.id}
-                className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 md:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-all duration-200 hover:border-slate-600 hover:shadow-lg hover:-translate-y-0.5"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-white text-item-title truncate">{tx.title}</p>
-                  <p className="text-item-meta">{tx.categoryName}</p>
-                  <p className="text-item-caption mt-0.5">{formatArgentineDate(tx.date)}</p>
-                </div>
-                <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4">
-                  <span
-                    className={`font-amount text-sm md:text-lg ${
-                      tx.type === 'INCOME' ? 'text-money-income' : 'text-money-expense'
-                    }`}
-                  >
+          <div className="space-y-1.5">
+            {visibleTransactions.map((tx) => {
+              const income = tx.type === 'INCOME';
+              return (
+                <div
+                  key={tx.id}
+                  className={`grid items-center gap-x-3 gap-y-1 px-3 py-2 rounded-lg border text-sm min-w-0 ${
+                    income ? 'border-emerald-400/25 hover:border-emerald-400/45' : 'border-red-400/25 hover:border-red-400/45'
+                  } ${lockedType ? 'grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,120px)_auto_auto]' : 'grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]'}`}
+                >
+                  <span className="text-slate-100 font-medium truncate text-left">{tx.title}</span>
+                  <span className="text-slate-400 truncate text-left">{tx.categoryName}</span>
+                  {lockedType ? (
+                    <>
+                      <span className="text-slate-500 text-left hidden sm:block">{formatArgentineDate(tx.date)}</span>
+                      <span className={`font-amount text-left shrink-0 ${income ? 'text-money-income' : 'text-money-expense'}`}>
+                        {formatPesoSigned(tx.amount, tx.type)}
+                      </span>
+                      {!isReadOnlyList && (
+                        <div className="flex gap-0.5 justify-end shrink-0">
+                          <button onClick={() => handleOpenModal(tx)} className="p-1.5 hover:bg-white/5 rounded-md transition text-slate-400 hover:text-white" title={t('transactions.edit')}><Edit2 size={15} /></button>
+                          <button onClick={() => handleDelete(tx.id)} className="p-1.5 hover:bg-red-500/10 rounded-md transition text-red-400 hover:text-red-300" title={t('transactions.deleteAction')}><Trash2 size={15} /></button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="hidden sm:grid grid-cols-2 gap-x-3 items-center min-w-0">
+                      <span className="text-slate-500 text-left truncate">{formatArgentineDate(tx.date)}</span>
+                      <span className={`font-amount text-left truncate ${income ? 'text-money-income' : 'text-money-expense'}`}>
+                        {formatPesoSigned(tx.amount, tx.type)}
+                      </span>
+                    </div>
+                  )}
+                  <span className={`sm:hidden font-amount text-left shrink-0 ${income ? 'text-money-income' : 'text-money-expense'}`}>
                     {formatPesoSigned(tx.amount, tx.type)}
                   </span>
-                  {!isReadOnlyList && (
-                  <div className="flex gap-1">
-                    <button
-                      onClick={() => handleOpenModal(tx)}
-                      className="p-1.5 md:p-2 hover:bg-slate-700 rounded-lg transition text-slate-300 hover:text-white"
-                      title="Editar"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(tx.id)}
-                      className="p-1.5 md:p-2 hover:bg-red-900/30 rounded-lg transition text-red-400 hover:text-red-300"
-                      title="Eliminar"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
         {showModal && (
           <AppModal
             open
-            title={transactionModalTitle(editingId, lockedType)}
+            title={transactionModalTitle(t, editingId, lockedType)}
             onClose={handleCloseModal}
           >
             {error && (
@@ -451,19 +454,19 @@ const TransactionsPage = () => {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <ModalField label="Título">
+              <ModalField label={t('tx.title')}>
                 <input
                   type="text"
                   placeholder={
                     lockedType === 'INCOME'
-                      ? 'Ejemplo: Sueldo de junio'
+                      ? t('tx.salaryJune')
                       : lockedType === 'EXPENSE'
-                        ? 'Ejemplo: Panadería'
+                        ? t('tx.bakery')
                         : formData.type === 'INCOME'
-                          ? 'Ejemplo: Sueldo de junio'
+                          ? t('tx.salaryJune')
                           : formData.type === 'EXPENSE'
-                            ? 'Ejemplo: Panadería'
-                            : 'Ejemplo: Título'
+                            ? t('tx.bakery')
+                            : t('tx.titleExample')
                   }
                   value={formData.title}
                   onChange={handleChange('title')}
@@ -471,7 +474,7 @@ const TransactionsPage = () => {
                   required
                 />
               </ModalField>
-              <ModalField label="Monto">
+              <ModalField label={t('tx.amount')}>
                 <input
                   type="text"
                   inputMode="decimal"
@@ -482,7 +485,7 @@ const TransactionsPage = () => {
                   required
                 />
               </ModalField>
-              <ModalField label="Fecha">
+              <ModalField label={t('tx.date')}>
                 <input
                   type="date"
                   value={formData.dateLocal?.slice(0, 10) || ''}
@@ -500,20 +503,20 @@ const TransactionsPage = () => {
                 />
               </ModalField>
               {!lockedType && (
-                <ModalField label="Tipo">
+                <ModalField label={t('tx.type')}>
                   <select
                     value={formData.type}
                     onChange={handleTypeChange}
                     className={modalInputClass}
                     required
                   >
-                    <option value="">Seleccioná tipo</option>
-                    <option value="INCOME">Ingreso</option>
-                    <option value="EXPENSE">Gasto</option>
+                    <option value="">{t('tx.selectType')}</option>
+                    <option value="INCOME">{t('tx.income')}</option>
+                    <option value="EXPENSE">{t('tx.expense')}</option>
                   </select>
                 </ModalField>
               )}
-              <ModalField label="Categoría">
+              <ModalField label={t('tx.category')}>
                 <div className="space-y-2">
                   {(formData.type || lockedType) && (
                     <button
@@ -524,7 +527,7 @@ const TransactionsPage = () => {
                       }}
                       className="text-xs text-amber-400 hover:underline"
                     >
-                      + Agregar categoría
+                      {t('tx.addCategory')}
                     </button>
                   )}
                   <select
@@ -535,7 +538,7 @@ const TransactionsPage = () => {
                     required
                   >
                     <option value="">
-                      {(formData.type || lockedType) ? 'Seleccioná categoría' : 'Elegí el tipo primero'}
+                      {(formData.type || lockedType) ? t('tx.selectCategory') : t('tx.chooseTypeFirst')}
                     </option>
                     {categoriesForType(formData.type || lockedType).map((cat) => (
                       <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -546,7 +549,7 @@ const TransactionsPage = () => {
 
               <ModalActions
                 onCancel={handleCloseModal}
-                submitLabel={editingId ? 'Guardar' : 'Aceptar'}
+                submitLabel={editingId ? t('common.save') : t('scan.accept')}
                 loading={submitting}
               />
             </form>

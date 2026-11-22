@@ -1,7 +1,9 @@
 package com.monargent.backend.config;
 
 import com.monargent.backend.service.CustomUserDetailsService;
+import java.time.Duration;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -47,8 +49,13 @@ public class ApplicationConfig {
     }
 
     @Bean
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
+    public RestTemplate restTemplate(RestTemplateBuilder builder) {
+        // External providers can accept the connection and never answer. Without these
+        // timeouts a stuck OCR/Gemini call holds a Tomcat thread until the JVM restarts.
+        return builder
+            .connectTimeout(Duration.ofSeconds(10))
+            .readTimeout(Duration.ofSeconds(60))
+            .build();
     }
 
     @Bean

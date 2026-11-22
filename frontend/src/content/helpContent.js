@@ -1,8 +1,9 @@
+import { getLanguage } from '../utils/preferencesStore';
+
 /**
- * Textos de ayuda contextual (panel chico del “?”).
- * Mantener tono breve, criollo y en español.
+ * Contextual help content. Language-aware via Proxy so existing HELP.x.title/body usage keeps working.
  */
-export const HELP = {
+const ES = {
   goals: {
     title: 'Objetivos de ahorro',
     body: [
@@ -56,6 +57,13 @@ export const HELP = {
       'No es lo mismo que un objetivo: el límite frena un gasto; el objetivo junta plata para algo que querés.',
     ],
   },
+  transactions: {
+    title: 'Movimientos',
+    body: [
+      'Acá ves ingresos y gastos del período. Podés filtrar por mes, categoría y tipo.',
+      'Cada movimiento muestra título, categoría, fecha y monto. Los ingresos van en verde y los gastos en rojo.',
+    ],
+  },
   calendar: {
     title: 'Avisos del calendario',
     body: [
@@ -65,3 +73,84 @@ export const HELP = {
     ],
   },
 };
+
+const EN = {
+  goals: {
+    title: 'Savings goals',
+    body: [
+      'A goal is something you want to save for: an amount and, optionally, a date.',
+      'You deposit as you save and track progress. When you reach 100%, the goal is completed.',
+      'Each deposit is recorded as an expense in the savings category and counts toward the month balance.',
+    ],
+  },
+  mood: {
+    title: 'Financial health',
+    body: [
+      'The score goes from 0 to 100. It is made of 4 parts worth 25 points each (looking at the current month):',
+      '• Spending pace: how much of your income you already spent based on where you are in the month. If by mid-month 70% is gone and you have 30% left, that is bad. Spending more than you earned scores zero: what money is left?',
+      '• Group expenses: 25 points if you owe nothing; it drops if you have pending settlement debts (small amounts under $15,000 are considered).',
+      '• Goals: based on how much you progressed on active goals (closer to the end = more points).',
+      '• Spending limits: better if you stay under monthly caps (or if you set none).',
+      'Face: 0–39 watch out · 40–69 on track · 70–100 good. If the month closes in the red or you exceeded 2+ limits, it cannot stay “good”.',
+    ],
+  },
+  groups: {
+    title: 'Group expenses',
+    body: [
+      'Create a group, add expenses and invite people (with app or guests without account).',
+      'When everyone with the app confirms movements, settlement is calculated: who owes and who collects based on what each person spent versus an equal share.',
+      'If you owe someone with the app: transfer via Mercado Pago, upload proof and that person confirms. You can also mark cash.',
+      'If you owe a guest without app: copy the alias, pay them and mark as paid. No proof or confirmation required.',
+      'Set your alias on this screen so others can pay you.',
+    ],
+  },
+  groupsSettlement: {
+    title: 'Group settlement',
+    body: [
+      'The share per person is the group total divided by number of members.',
+      'If you spent more than the share, they owe you; if you spent less, you owe the difference.',
+      'Between app users, the collector confirms payment. If the collector has no account, marking as paid is enough.',
+    ],
+  },
+  scan: {
+    title: 'Import from receipt',
+    body: [
+      'Take a photo or upload the receipt and the app builds items for you to review.',
+      'Check amount, category and date for each one. If something is wrong, fix it before accepting.',
+      'When you tap Accept, they are saved as expenses or income for the month. By default date is today so you see them in current month transactions.',
+    ],
+  },
+  limits: {
+    title: 'Spending limits',
+    body: [
+      'A limit is how much you can spend in a category during the month.',
+      'Every time you add an expense in that category, it adds up. If you go over, the app alerts you and it also lowers your financial health.',
+      'It is not the same as a goal: a limit controls spending; a goal saves money for something you want.',
+    ],
+  },
+  transactions: {
+    title: 'Transactions',
+    body: [
+      'Here you see income and expenses for the period. You can filter by month, category and type.',
+      'Each transaction shows title, category, date and amount. Income is green and expenses are red.',
+    ],
+  },
+  calendar: {
+    title: 'Calendar alerts',
+    body: [
+      'The app notifies you a few days before so you don\'t miss anything.',
+      'Fixed expenses: you get a reminder 5 days before and another 3 days before.',
+      'Events: also at 5 and 3 days, and about 12 hours before the time you set.',
+    ],
+  },
+};
+
+export function getHelp(lang = getLanguage()) {
+  return lang === 'en' ? EN : ES;
+}
+
+export const HELP = new Proxy({}, {
+  get(_, key) {
+    return getHelp(getLanguage())[key];
+  },
+});

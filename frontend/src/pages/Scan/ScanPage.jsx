@@ -2,13 +2,16 @@ import { useState, useEffect, useRef } from 'react';
 import Layout from '../../components/layout/Layout';
 import api from '../../services/api';
 import { useTransactions } from '../../context/TransactionContext';
+import { usePreferences } from '../../context/PreferencesContext';
 import { Plus, Trash2, Camera, Upload, Loader2, X } from 'lucide-react';
+
 import { formatPeso } from '../../utils/format';
 import {
   formatAmountFromDigits,
   parseAmountDigits,
   sanitizeAmountDigits,
   digitsFromNumericAmount,
+  toBaseAmount,
 } from '../../utils/currency';
 import { compressImageForOcr, fileFingerprint } from '../../utils/imageCompress';
 import { notifyFinancesChanged } from '../../utils/financesEvents';
@@ -18,6 +21,8 @@ import { HELP } from '../../content/helpContent';
 const EXTRACT_TIMEOUT_MS = 90_000;
 const OCR_CACHE_KEY = 'monargent:ocr-preview';
 const TITLE_MAX = 150;
+const MAX_DOCUMENT_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_INPUT_BYTES = 25 * 1024 * 1024;
 
 const todayIsoDate = () => {
   const d = new Date();
@@ -38,10 +43,10 @@ const emptyItem = () => ({
   date: todayIsoDate(),
 });
 
-const STAGE_LABELS = {
-  compressing: 'Optimizando imagen…',
-  uploading: 'Subiendo archivo…',
-  processing: 'Extrayendo productos…',
+const STAGE_KEYS = {
+  compressing: 'scan.optimizing',
+  uploading: 'scan.uploading',
+  processing: 'scan.extractingProducts',
 };
 
 const ScanPage = () => {
@@ -58,7 +63,9 @@ const ScanPage = () => {
   const [compressedHint, setCompressedHint] = useState('');
 
   const { categories, fetchCategories, fetchTransactions } = useTransactions();
+  const { t } = usePreferences();
   const loading = stage !== null;
+
 
   useEffect(() => {
     fetchCategories();
@@ -73,8 +80,17 @@ const ScanPage = () => {
     setError(null);
     setCompressedHint('');
     const f = e.target.files?.[0];
-    if (f) setFile(f);
     e.target.value = '';
+    if (!f) return;
+
+    const isImage = f.type.startsWith('image/');
+    const limit = isImage ? MAX_IMAGE_INPUT_BYTES : MAX_DOCUMENT_BYTES;
+    if (f.size > limit) {
+      setError(t('scan.fileTooLarge', { mb: Math.round(limit / (1024 * 1024)) }));
+      return;
+    }
+
+    setFile(f);
   };
 
   const cancelExtraction = () => {
@@ -107,7 +123,8 @@ const ScanPage = () => {
   };
 
   const submit = async () => {
-    if (!file) return setError('Seleccioná un archivo primero');
+    if (!file) return setError(t('scan.selectFile'));
+
 
     const fingerprint = fileFingerprint(file);
     try {
@@ -116,7 +133,8 @@ const ScanPage = () => {
         const parsedCache = JSON.parse(cached);
         if (parsedCache.fingerprint === fingerprint && parsedCache.preview) {
           applyPreview(parsedCache.preview);
-          setCompressedHint(parsedCache.compressedHint || 'Resultado en caché (misma imagen).');
+          setCompressedHint(parsedCache.compressedHint || t('scan.cached'));
+
           return;
         }
       }
@@ -136,7 +154,7 @@ const ScanPage = () => {
       const uploadFile = await compressImageForOcr(file);
       if (uploadFile !== file) {
         const savedKb = Math.max(0, Math.round((file.size - uploadFile.size) / 1024));
-        setCompressedHint(`Imagen optimizada (−${savedKb} KB) para subir más rápido.`);
+        setCompressedHint(t('scan.optimizedHint', { kb: savedKb }));
       }
 
       if (controller.signal.aborted) return;
@@ -156,20 +174,23 @@ const ScanPage = () => {
       sessionStorage.setItem(OCR_CACHE_KEY, JSON.stringify({
         fingerprint,
         preview: resp.data,
-        compressedHint: uploadFile !== file
-          ? `Imagen optimizada para subir más rápido.`
-          : '',
+        compressedHint: uploadFile !== file ? t('scan.optimizedShort') : '',
       }));
     } catch (e) {
       if (controller.signal.aborted || e.code === 'ERR_CANCELED') {
-        setError('Extracción cancelada.');
+        setError(t('scan.cancelled'));
+
+        return;
+      }
+      if (e.code === 'UNSUPPORTED_IMAGE') {
+        setError(e.message);
         return;
       }
       if (e.code === 'ECONNABORTED') {
-        setError('La extracción tardó demasiado. Probá con una foto más nítida o un recorte más chico.');
+        setError(t('scan.timeout'));
         return;
       }
-      setError(e?.response?.data?.message || 'No pudimos procesar el archivo. Intentá de nuevo.');
+      setError(e?.response?.data?.message || t('scan.processError'));
     } finally {
       if (abortRef.current === controller) {
         abortRef.current = null;
@@ -225,17 +246,18 @@ const ScanPage = () => {
 
   const confirmImport = async () => {
     if (items.length === 0) {
-      return setError('Agregá al menos un movimiento para importar');
+      return setError(t('scan.addAtLeastOne'));
     }
 
     for (let index = 0; index < items.length; index += 1) {
       const item = items[index];
       const amount = parseAmountDigits(item.amountDigits) || Number(item.amount) || 0;
+      const baseAmount = toBaseAmount(amount);
       if (!item.description?.trim()) {
-        return setError(`Completá la descripción del movimiento ${index + 1}.`);
+        return setError(t('scan.completeDesc', { n: index + 1 }));
       }
-      if (amount <= 0) {
-        return setError(`El monto del movimiento ${index + 1} debe ser mayor a cero.`);
+      if (Number.isNaN(baseAmount) || baseAmount <= 0) {
+        return setError(t('scan.amountGtZero', { n: index + 1 }));
       }
     }
 
@@ -258,7 +280,7 @@ const ScanPage = () => {
           return {
             type: it.type,
             description: it.description.trim().slice(0, TITLE_MAX),
-            amount: parseAmountDigits(it.amountDigits) || Number(it.amount) || 0,
+            amount: toBaseAmount(parseAmountDigits(it.amountDigits) || Number(it.amount) || 0),
             date: it.date || todayIsoDate(),
             categoryId: categoryMatchesType && it.categoryId ? Number(it.categoryId) : null,
             categoryName,
@@ -283,7 +305,7 @@ const ScanPage = () => {
       const apiMessage = e?.response?.data?.message
         || e?.response?.data?.error
         || (Array.isArray(e?.response?.data?.errors) && e.response.data.errors[0])
-        || 'Error al confirmar la importación';
+        || t('scan.confirmError');
       setError(apiMessage);
     } finally {
       setSaving(false);
@@ -308,11 +330,12 @@ const ScanPage = () => {
       <div className="max-w-4xl mx-auto text-slate-100 pb-6 px-1">
         <section className="rounded-3xl border border-[#284567] bg-[#0f2543] p-4 sm:p-6 mt-4">
           <div className="flex items-start justify-between gap-3 mb-2">
-            <h2 className="text-xl sm:text-2xl font-semibold">Importar movimientos</h2>
+            <h2 className="text-xl sm:text-2xl font-semibold">{t('scan.title')}</h2>
+
             <HelpTip title={HELP.scan.title} body={HELP.scan.body} align="right" />
           </div>
           <p className="text-sm text-slate-400 mb-4">
-            Sacá una foto o subí un archivo. Revisá los movimientos antes de confirmar.
+            {t('scan.takePhoto')}
           </p>
 
           <input
@@ -340,7 +363,7 @@ const ScanPage = () => {
                 className="flex items-center justify-center gap-2 rounded-xl bg-[#E8B923] text-slate-900 px-4 py-3 font-semibold disabled:opacity-50"
               >
                 <Camera size={20} />
-                Usar cámara
+                {t('scan.useCamera')}
               </button>
               <button
                 type="button"
@@ -349,7 +372,8 @@ const ScanPage = () => {
                 className="flex items-center justify-center gap-2 rounded-xl border border-[#284567] px-4 py-3 text-slate-200 disabled:opacity-50"
               >
                 <Upload size={20} />
-                Subir archivo
+                {t('scan.upload')}
+
               </button>
             </div>
 
@@ -357,7 +381,7 @@ const ScanPage = () => {
               <div className="mt-4 text-sm text-slate-200 break-all">
                 <p className="font-medium truncate">{file.name}</p>
                 <p className="text-xs text-slate-400">
-                  {file.type || 'tipo desconocido'}
+                  {file.type || t('scan.unknownType')}
                   {' · '}
                   {Math.round(file.size / 1024)} KB
                 </p>
@@ -372,7 +396,7 @@ const ScanPage = () => {
               <div className="mt-4 rounded-xl border border-[#284567] bg-[#071427] p-4 space-y-3">
                 <div className="flex items-center justify-center gap-2 text-amber-300">
                   <Loader2 size={18} className="animate-spin" />
-                  <span className="text-sm font-medium">{STAGE_LABELS[stage] || 'Procesando…'}</span>
+                  <span className="text-sm font-medium">{t(STAGE_KEYS[stage] || 'scan.processing')}</span>
                 </div>
                 <div className="flex gap-1 justify-center">
                   {['compressing', 'uploading', 'processing'].map((step) => (
@@ -396,8 +420,9 @@ const ScanPage = () => {
                     className="flex items-center gap-1 text-xs text-slate-400 hover:text-red-300"
                   >
                     <X size={14} />
-                    Cancelar
+                    {t('scan.cancel')}
                   </button>
+
                 </div>
               </div>
             )}
@@ -409,7 +434,8 @@ const ScanPage = () => {
                 disabled={loading || !file}
                 className="rounded-lg bg-emerald-400 text-slate-900 px-5 py-2.5 font-semibold disabled:opacity-50"
               >
-                {loading ? 'Procesando…' : 'Extraer movimientos'}
+                {loading ? t('scan.processing') : t('scan.extract')}
+
               </button>
             </div>
 
@@ -418,9 +444,9 @@ const ScanPage = () => {
 
           {summary && (
             <div className="mt-6 rounded-xl border border-emerald-700 bg-[#071427] p-4">
-              <h3 className="font-semibold text-emerald-300 mb-2">Importación completada</h3>
+              <h3 className="font-semibold text-emerald-300 mb-2">{t('scan.importComplete')}</h3>
               <p className="text-sm text-slate-300">
-                Total: {summary.totalImported} ({summary.incomes} ingresos, {summary.expenses} egresos)
+                {t('scan.total', { total: summary.totalImported, incomes: summary.incomes, expenses: summary.expenses })}
               </p>
             </div>
           )}
@@ -428,13 +454,14 @@ const ScanPage = () => {
           {preview && (
             <div className="mt-6 rounded-xl border border-[#2c496d] p-3 sm:p-4 bg-[#071427] overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                <h3 className="font-semibold text-sm sm:text-base">Revisá antes de confirmar</h3>
+                <h3 className="font-semibold text-sm sm:text-base">{t('scan.reviewBeforeConfirm')}</h3>
                 <button
                   type="button"
                   onClick={addItem}
                   className="flex items-center gap-1 text-sm text-[#E8B923]"
                 >
-                  <Plus size={16} /> Agregar
+                  <Plus size={16} /> {t('scan.add')}
+
                 </button>
               </div>
 
@@ -446,12 +473,12 @@ const ScanPage = () => {
                       className="rounded-xl border border-[#284567] bg-[#0f2543] p-3 space-y-2"
                     >
                       <div className="flex justify-between items-start gap-2">
-                        <span className="text-xs text-slate-400">Movimiento {idx + 1}</span>
+                        <span className="text-xs text-slate-400">{t('scan.movementN', { n: idx + 1 })}</span>
                         <button
                           type="button"
                           onClick={() => removeItem(idx)}
                           className="text-red-300 shrink-0"
-                          aria-label="Eliminar"
+                          aria-label={t('common.delete')}
                         >
                           <Trash2 size={16} />
                         </button>
@@ -461,7 +488,7 @@ const ScanPage = () => {
                         value={it.description}
                         maxLength={TITLE_MAX}
                         onChange={(e) => updateItem(idx, 'description', e.target.value)}
-                        placeholder="Descripción"
+                        placeholder={t('scan.description')}
                       />
                       <div className="grid grid-cols-2 gap-2">
                         <input
@@ -477,8 +504,8 @@ const ScanPage = () => {
                           value={it.type}
                           onChange={(e) => updateItemType(idx, e.target.value)}
                         >
-                          <option value="EXPENSE">Egreso</option>
-                          <option value="INCOME">Ingreso</option>
+                          <option value="EXPENSE">{t('scan.expenseType')}</option>
+                          <option value="INCOME">{t('scan.incomeType')}</option>
                         </select>
                       </div>
                       <select
@@ -486,7 +513,7 @@ const ScanPage = () => {
                         value={it.categoryId}
                         onChange={(e) => updateItem(idx, 'categoryId', e.target.value)}
                       >
-                        <option value="">Sugerida: {it.suggestedCategory || 'Otros'}</option>
+                        <option value="">{t('scan.suggested', { name: it.suggestedCategory || t('scan.other') })}</option>
                         {categoriesForType(it.type).map((c) => (
                           <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
@@ -506,7 +533,7 @@ const ScanPage = () => {
                       onClick={cancelImport}
                       className="flex-1 rounded-xl bg-slate-700 hover:bg-slate-600 text-slate-300 py-2.5 text-sm font-medium"
                     >
-                      Cancelar
+                      {t('common.cancel')}
                     </button>
                     <button
                       type="button"
@@ -514,12 +541,12 @@ const ScanPage = () => {
                       disabled={saving}
                       className="flex-1 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-900 py-2.5 text-sm font-semibold disabled:opacity-60"
                     >
-                      {saving ? 'Guardando...' : 'Aceptar'}
+                      {saving ? t('common.saving') : t('scan.accept')}
                     </button>
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-slate-400">No se detectaron movimientos.</p>
+                <p className="text-sm text-slate-400">{t('scan.noDetected')}</p>
               )}
             </div>
           )}

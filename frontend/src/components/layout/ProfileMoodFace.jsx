@@ -6,11 +6,12 @@ import HelpTip from '../ui/HelpTip';
 import { HELP } from '../../content/helpContent';
 import useLiveRefresh from '../../hooks/useLiveRefresh';
 import { onFinancesChanged } from '../../utils/financesEvents';
+import { usePreferences } from '../../context/PreferencesContext';
 
 const TIER_STYLE = {
-  GOOD: 'border-emerald-500/35 bg-emerald-400/10 text-emerald-100',
-  MEDIUM: 'border-amber-400/35 bg-amber-400/10 text-amber-100',
-  LOW: 'border-red-500/35 bg-red-400/10 text-red-200',
+  GOOD: 'border-2 border-emerald-500/50 bg-emerald-400/20 text-blue-900 dark:text-blue-100',
+  MEDIUM: 'border-2 border-amber-400/50 bg-amber-400/20 text-blue-900 dark:text-blue-100',
+  LOW: 'border-2 border-red-500/50 bg-red-400/20 text-blue-900 dark:text-blue-100',
 };
 
 const TIER_DOT = {
@@ -19,20 +20,20 @@ const TIER_DOT = {
   LOW: 'bg-red-400',
 };
 
-const DEFAULT_MOOD = {
-  level: 'ON_TRACK',
-  score: 50,
-  maxScore: 100,
-  statusTitle: 'En camino',
-  statusDescription: 'Cargando tu salud financiera...',
-  factors: [],
-};
-
 export default function ProfileMoodFace() {
+  const { t } = usePreferences();
   const ref = useRef(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [mood, setMood] = useState(DEFAULT_MOOD);
+  const defaultMood = {
+    level: 'ON_TRACK',
+    score: 50,
+    maxScore: 100,
+    statusTitle: '—',
+    statusDescription: t('mood.loading'),
+    factors: [],
+  };
+  const [mood, setMood] = useState(defaultMood);
 
   const loadMood = useCallback(async (options = {}) => {
     const { silent = false } = options;
@@ -41,8 +42,12 @@ export default function ProfileMoodFace() {
       setMood(data);
     } catch {
       setMood({
-        ...DEFAULT_MOOD,
-        statusDescription: 'No pudimos calcular tu salud financiera.',
+        level: 'ON_TRACK',
+        score: 50,
+        maxScore: 100,
+        statusTitle: '—',
+        statusDescription: t('mood.error'),
+        factors: [],
       });
     } finally {
       if (!silent) {
@@ -86,7 +91,7 @@ export default function ProfileMoodFace() {
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         className="flex items-center gap-1.5 min-h-8 px-1.5 rounded-full hover:bg-white/5 transition-colors"
-        aria-label="Salud financiera del mes"
+        aria-label={t('layout.financialHealth')}
       >
         <MoodFaceIcon level={mood.level} size={26} />
         <span className="text-xs font-semibold text-amber-200/90 hidden sm:inline">
@@ -101,7 +106,7 @@ export default function ProfileMoodFace() {
               <MoodFaceIcon level={mood.level} size={32} />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-slate-100">{mood.statusTitle}</p>
-                <p className="text-xs text-amber-300">Puntaje: {mood.score} / {mood.maxScore}</p>
+                <p className="text-xs text-amber-300">{t('mood.scoreLabel', { score: mood.score, max: mood.maxScore })}</p>
               </div>
               <HelpTip title={HELP.mood.title} body={HELP.mood.body} align="right" />
             </div>
@@ -110,7 +115,7 @@ export default function ProfileMoodFace() {
             <p className="text-sm text-slate-300 leading-relaxed">{mood.statusDescription}</p>
 
             <div className="space-y-2">
-              <p className="text-xs uppercase tracking-wide text-slate-500">Detalle por factor</p>
+              <p className="text-xs uppercase tracking-wide text-slate-500">{t('mood.factorDetail')}</p>
               {(mood.factors || []).map((factor) => (
                 <div
                   key={factor.key}

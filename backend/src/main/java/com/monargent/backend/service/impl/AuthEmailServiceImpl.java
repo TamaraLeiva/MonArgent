@@ -1,11 +1,14 @@
 package com.monargent.backend.service.impl;
 
 import com.monargent.backend.enums.AuthEmailType;
+import com.monargent.backend.exception.EmailSendException;
 import com.monargent.backend.service.AuthEmailService;
 import jakarta.mail.internet.MimeMessage;
+import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -16,9 +19,13 @@ import org.springframework.stereotype.Service;
 public class AuthEmailServiceImpl implements AuthEmailService {
 
     private final JavaMailSender mailSender;
+    private final Environment environment;
 
     @Value("${spring.mail.properties.mail.smtp.from:noreply@monargent.app}")
     private String fromAddress;
+
+    @Value("${app.auth.expose-codes-in-log:false}")
+    private boolean exposeCodesInLog;
 
     @Override
     public void sendAuthCodeEmail(String toEmail, String code, AuthEmailType type, int expirationMinutes) {
@@ -35,18 +42,21 @@ public class AuthEmailServiceImpl implements AuthEmailService {
             mailSender.send(message);
             log.info("Auth email ({}) sent to {}", type, toEmail);
         } catch (Exception ex) {
-            log.warn(
-                "No se pudo enviar el correo a {} ({}). Código de desarrollo (solo local): {}",
-                toEmail,
-                type,
-                code
+            boolean prodProfile = Arrays.stream(environment.getActiveProfiles()).anyMatch("prod"::equalsIgnoreCase);
+            if (exposeCodesInLog && !prodProfile) {
+                log.warn(
+                    "No se pudo enviar el correo a {} ({}). Código expuesto solo por flag dev: {}",
+                    toEmail,
+                    type,
+                    code
+                );
+            } else {
+                log.warn("No se pudo enviar el correo a {} ({}).", toEmail, type);
+            }
+            log.debug("Detalle técnico de envío de correo omitido al cliente", ex);
+            throw new EmailSendException(
+                "No se pudo enviar el correo de verificación. Verificá la configuración de correo o intentá más tarde."
             );
-            System.out.println("==================================================");
-            System.out.println("MonArgent — correo no enviado (modo local)");
-            System.out.println("Para: " + toEmail);
-            System.out.println("Código: " + code);
-            System.out.println("Vence en " + expirationMinutes + " minutos");
-            System.out.println("==================================================");
         }
     }
 

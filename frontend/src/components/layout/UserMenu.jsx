@@ -6,8 +6,10 @@ import { getErrorMessage } from '../../utils/apiErrors';
 import { formatPeso } from '../../utils/format';
 import { openProofBlob, resolveProofContentType } from '../../utils/proofBlob';
 import useKeyboardOffset from '../../hooks/useKeyboardOffset';
+import { usePreferences } from '../../context/PreferencesContext';
 
-const UserMenu = ({ initials, onLogout }) => {
+const UserMenu = ({ initials, email, onLogout }) => {
+  const { t } = usePreferences();
   const [open, setOpen] = useState(false);
   const [panel, setPanel] = useState('menu');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -46,7 +48,7 @@ const UserMenu = ({ initials, onLogout }) => {
       const { data } = await documentService.listReceived();
       setDocuments(data);
     } catch (error) {
-      setErrorMsg(getErrorMessage(error, 'No se pudieron cargar los documentos.'));
+      setErrorMsg(getErrorMessage(error, t('menu.docsLoadError')));
     } finally {
       setLoadingDocs(false);
     }
@@ -70,7 +72,7 @@ const UserMenu = ({ initials, onLogout }) => {
       const contentType = resolveProofContentType(response.headers, doc.contentType);
       openProofBlob(response.data, contentType);
     } catch (error) {
-      setErrorMsg(getErrorMessage(error, 'No se pudo abrir el documento.'));
+      setErrorMsg(getErrorMessage(error, t('menu.docOpenError')));
     } finally {
       setOpeningDocId(null);
     }
@@ -87,13 +89,13 @@ const UserMenu = ({ initials, onLogout }) => {
         newPassword,
         passwordConfirm: confirmPassword,
       });
-      setSuccessMsg('Contraseña actualizada.');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setPanel('menu');
+      closeMenu();
+      onLogout?.();
     } catch (error) {
-      setErrorMsg(getErrorMessage(error, 'No se pudo cambiar la contraseña.'));
+      setErrorMsg(getErrorMessage(error, t('menu.passwordChangeError')));
     } finally {
       setSaving(false);
     }
@@ -105,7 +107,7 @@ const UserMenu = ({ initials, onLogout }) => {
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         className="w-9 h-9 rounded-full border border-[#2a4466] bg-[#102946] text-slate-100 text-xs font-semibold flex items-center justify-center"
-        aria-label="Menú de perfil"
+        aria-label={t('layout.profileMenu')}
       >
         {initials}
       </button>
@@ -126,7 +128,7 @@ const UserMenu = ({ initials, onLogout }) => {
                 type="button"
                 onClick={closeMenu}
                 className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-[#1a3457]"
-                aria-label="Cerrar menú"
+                aria-label={t('layout.closeMenu')}
               >
                 <X size={18} />
               </button>
@@ -134,13 +136,19 @@ const UserMenu = ({ initials, onLogout }) => {
 
             {panel === 'menu' && (
               <div className="space-y-1 flex-1 md:flex-none">
+                {email && (
+                  <div className="px-3 py-2 mb-1 border-b border-[#284567]/60">
+                    <p className="text-[11px] uppercase tracking-wider text-slate-500">{t('menu.account')}</p>
+                    <p className="text-sm text-slate-200 truncate">{email}</p>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={openDocuments}
                   className="w-full flex items-center gap-2 px-3 py-3 md:py-2 rounded-lg text-sm text-slate-200 hover:bg-[#1a3457] transition-colors"
                 >
                   <FileText size={16} />
-                  Mis documentos
+                  {t('menu.documents')}
                 </button>
                 <button
                   type="button"
@@ -148,7 +156,7 @@ const UserMenu = ({ initials, onLogout }) => {
                   className="w-full flex items-center gap-2 px-3 py-3 md:py-2 rounded-lg text-sm text-slate-200 hover:bg-[#1a3457] transition-colors"
                 >
                   <KeyRound size={16} />
-                  Cambiar contraseña
+                  {t('menu.changePassword')}
                 </button>
                 <button
                   type="button"
@@ -159,7 +167,7 @@ const UserMenu = ({ initials, onLogout }) => {
                   className="w-full flex items-center gap-2 px-3 py-3 md:py-2 rounded-lg text-sm text-red-300 hover:bg-red-900/20 transition-colors"
                 >
                   <LogOut size={16} />
-                  Cerrar sesión
+                  {t('menu.logout')}
                 </button>
               </div>
             )}
@@ -167,22 +175,22 @@ const UserMenu = ({ initials, onLogout }) => {
             {panel === 'documents' && (
               <div className="space-y-3 flex-1 md:flex-none">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-slate-100">Mis documentos</p>
+                  <p className="text-sm font-medium text-slate-100">{t('menu.documents')}</p>
                   <button
                     type="button"
                     onClick={() => setPanel('menu')}
                     className="text-xs text-slate-400 hover:text-amber-300"
                   >
-                    Volver
+                    {t('menu.back')}
                   </button>
                 </div>
                 <p className="text-xs text-slate-400">
-                  Comprobantes que te enviaron en grupos.
+                  {t('menu.receiptsHelp')}
                 </p>
                 {loadingDocs ? (
-                  <p className="text-sm text-slate-400">Cargando...</p>
+                  <p className="text-sm text-slate-400">{t('common.loading')}</p>
                 ) : documents.length === 0 ? (
-                  <p className="text-sm text-slate-500">Todavía no recibiste comprobantes.</p>
+                  <p className="text-sm text-slate-500">{t('menu.noReceipts')}</p>
                 ) : (
                   <ul className="space-y-2">
                     {documents.map((doc) => (
@@ -192,13 +200,13 @@ const UserMenu = ({ initials, onLogout }) => {
                       >
                         <p className="font-medium text-slate-100">{doc.groupTitle}</p>
                         <p className="text-xs text-slate-400 mt-1">
-                          De {doc.fromMemberName}
+                          {t('menu.from')} {doc.fromMemberName}
                           {doc.amount != null && (
                             <> · {formatPeso(doc.amount, { decimals: 2 })}</>
                           )}
                         </p>
                         <p className="text-xs text-slate-500 mt-1">
-                          {doc.confirmed ? 'Confirmado' : 'Pendiente de confirmación'}
+                          {doc.confirmed ? t('menu.confirmed') : t('menu.pendingConfirm')}
                         </p>
                         <button
                           type="button"
@@ -207,7 +215,7 @@ const UserMenu = ({ initials, onLogout }) => {
                           className="mt-2 flex items-center gap-1 text-xs text-amber-300 hover:text-amber-200 disabled:opacity-60"
                         >
                           <Eye size={14} />
-                          {openingDocId === doc.id ? 'Abriendo...' : 'Ver comprobante'}
+                          {openingDocId === doc.id ? t('menu.opening') : t('menu.viewReceipt')}
                         </button>
                       </li>
                     ))}
@@ -220,19 +228,19 @@ const UserMenu = ({ initials, onLogout }) => {
             {panel === 'password' && (
               <form onSubmit={handleChangePassword} className="space-y-3 flex-1 md:flex-none">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-slate-100">Cambiar contraseña</p>
+                  <p className="text-sm font-medium text-slate-100">{t('menu.changePasswordTitle')}</p>
                   <button
                     type="button"
                     onClick={() => setPanel('menu')}
                     className="text-xs text-slate-400 hover:text-amber-300"
                   >
-                    Volver
+                    {t('common.back')}
                   </button>
                 </div>
                 <input
                   type="password"
                   required
-                  placeholder="Contraseña actual"
+                  placeholder={t('menu.currentPasswordPlaceholder')}
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   className="w-full rounded-lg bg-[#0b2034] border border-[#284567] px-3 py-2 text-sm text-slate-100"
@@ -241,7 +249,7 @@ const UserMenu = ({ initials, onLogout }) => {
                   type="password"
                   required
                   minLength={8}
-                  placeholder="Nueva contraseña"
+                  placeholder={t('menu.newPasswordPlaceholder')}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="w-full rounded-lg bg-[#0b2034] border border-[#284567] px-3 py-2 text-sm text-slate-100"
@@ -250,7 +258,7 @@ const UserMenu = ({ initials, onLogout }) => {
                   type="password"
                   required
                   minLength={8}
-                  placeholder="Repetir nueva contraseña"
+                  placeholder={t('menu.repeatNewPasswordPlaceholder')}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   className="w-full rounded-lg bg-[#0b2034] border border-[#284567] px-3 py-2 text-sm text-slate-100"
@@ -263,14 +271,14 @@ const UserMenu = ({ initials, onLogout }) => {
                     onClick={() => setPanel('menu')}
                     className="flex-1 rounded-lg border border-[#284567] px-3 py-2 text-sm text-slate-300"
                   >
-                    Cancelar
+                    {t('common.cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={saving}
                     className="flex-1 rounded-lg bg-amber-400 text-slate-900 px-3 py-2 text-sm font-semibold disabled:opacity-60"
                   >
-                    {saving ? 'Guardando...' : 'Guardar'}
+                    {saving ? t('common.saving') : t('common.save')}
                   </button>
                 </div>
               </form>

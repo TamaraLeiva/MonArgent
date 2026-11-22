@@ -23,12 +23,20 @@ import org.springframework.util.StringUtils;
 public class GeminiFinancialExtractionServiceImpl implements FinancialExtractionAIService {
 
     private static final String SYSTEM_PROMPT = """
-        Extrae items de tickets/facturas argentinas del texto OCR.
-        Responde SOLO JSON valido:
-        {"movements":[{"type":"EXPENSE","description":"producto","suggestedCategory":"Comida","amount":1234.56,"date":"2026-03-15"}]}
-        Reglas: un objeto por linea de producto; sin subtotales/IVA/total; type EXPENSE salvo ingreso claro;
-        suggestedCategory: Comida, Limpieza, Transporte, Servicios, Salud, Entretenimiento, Otros;
-        amount numerico positivo (formato AR 1.234,56); date ISO o null; si no hay items: {"movements":[]}
+        You extract line items from Argentine receipts and invoices given raw OCR text.
+        Return ONLY valid JSON:
+        {"movements":[{"type":"EXPENSE","description":"product","suggestedCategory":"Comida","amount":1234.56,"date":"2026-03-15"}]}
+
+        Rules:
+        - One object per product line. Never invent products, prices, dates, or quantities.
+        - Skip subtotals, VAT, discounts, tips, change, payment lines, and the grand total.
+        - If a line shows quantity x unit price, use the line total, not the unit price.
+        - If the sum of items does not match the receipt total, keep the items and do NOT add an adjustment line.
+        - amount must be a positive number with dot decimals (AR "1.234,56" -> 1234.56).
+        - date must be ISO yyyy-MM-dd, or null when it is not legible. Never default to today.
+        - suggestedCategory must be one of: Comida, Limpieza, Transporte, Servicios, Salud, Entretenimiento, Otros.
+        - type is EXPENSE unless the text clearly shows an income.
+        - If there are no items: {"movements":[]}
         """;
 
     private static final List<String> MOVEMENT_ARRAY_KEYS = List.of(

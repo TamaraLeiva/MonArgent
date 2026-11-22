@@ -31,12 +31,16 @@ CREATE DATABASE monargent CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```env
 DB_USERNAME=root
 DB_PASSWORD=tu_password
-JWT_SECRET=clave-secreta-larga-minimo-256-bits
+# Generá uno con: openssl rand -base64 64 (mínimo 32 bytes al decodificar)
+JWT_SECRET=pega_aqui_la_salida_de_openssl_rand_base64_64
 MAIL_USERNAME=tu-email@gmail.com
 MAIL_PASSWORD=contraseña-de-app-de-gmail
-OCR_API_KEY=helloworld
-GEMINI_API_KEY=tu_clave_gemini
+OCR_API_KEY=your_ocr_space_api_key
+# Gemini: opcional; si no se configura, las funciones IA quedan deshabilitadas de forma controlada
+GEMINI_API_KEY=your_gemini_api_key
 ```
+
+> Si el `JWT_SECRET` estuvo alguna vez en el repo o en un log, rotalo: los tokens viejos dejan de valer y todos vuelven a iniciar sesión.
 
 > Gmail: usá una [contraseña de aplicación](https://myaccount.google.com/apppasswords).
 
