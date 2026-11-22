@@ -13,7 +13,7 @@ import PieChart3DScene from './PieChart3DScene';
 
 function PieLegend({ items, total, activeIndex }) {
   return (
-    <ul className="flex shrink-0 flex-col justify-center gap-2 py-2 pl-1 pr-2 w-[118px] sm:w-[128px]">
+    <ul className="grid grid-flow-col grid-rows-2 auto-cols-[minmax(90px,1fr)] gap-x-3 gap-y-1 px-1 py-1 overflow-x-auto">
       {items.map((item, index) => {
         const percent = total > 0 ? ((item.value / total) * 100).toFixed(0) : '0';
         const active = index === activeIndex;
@@ -21,18 +21,16 @@ function PieLegend({ items, total, activeIndex }) {
         return (
           <li
             key={item.name}
-            className={`flex items-start gap-2 transition-opacity ${active ? 'opacity-100' : 'opacity-70'}`}
+            className={`flex items-center gap-1.5 min-w-0 transition-opacity ${active ? 'opacity-100' : 'opacity-70'}`}
           >
             <span
-              className="mt-0.5 h-2.5 w-2.5 shrink-0 rounded-[3px] shadow-sm"
+              className="h-2.5 w-2.5 shrink-0 rounded-[3px] shadow-sm"
               style={{ backgroundColor: item.color }}
             />
-            <span className="min-w-0 text-[10px] leading-tight">
-              <span className={`block truncate ${active ? 'text-slate-200' : 'text-slate-400'}`}>
-                {item.name}
-              </span>
-              <span className="text-slate-500">{percent}%</span>
+            <span className={`truncate text-[10px] leading-tight ${active ? 'text-slate-200' : 'text-slate-400'}`}>
+              {item.name}
             </span>
+            <span className="text-[10px] text-slate-500 shrink-0">{percent}%</span>
           </li>
         );
       })}
@@ -108,12 +106,7 @@ export default function InteractivePieChart3D({ data = [], className = 'h-full w
   if (!coloredData.length) return null;
 
   return (
-    <div
-      className={`flex w-full overflow-hidden ${className}`}
-      style={{ height: 300, minHeight: 300, maxHeight: 300 }}
-    >
-      <PieLegend items={coloredData} total={total} activeIndex={frontIndex} />
-
+    <div className={`flex flex-col w-full overflow-hidden ${className}`} style={{ minHeight: 0 }}>
       <div
         className="relative min-w-0 flex-1 touch-none select-none cursor-grab active:cursor-grabbing"
         onPointerDown={handlePointerDown}
@@ -141,6 +134,7 @@ export default function InteractivePieChart3D({ data = [], className = 'h-full w
 
         {focused && <FocusDetail item={focused} total={total} />}
       </div>
+      <PieLegend items={coloredData} total={total} activeIndex={frontIndex} />
     </div>
   );
 }

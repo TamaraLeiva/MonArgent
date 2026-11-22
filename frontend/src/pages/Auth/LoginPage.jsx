@@ -29,10 +29,7 @@ const LoginPage = () => {
     try {
       await login({ email, password });
     } catch (error) {
-      setErrorMsg(getErrorMessage(
-        error,
-        'Correo o contraseña incorrectos. Verificá que el email esté bien escrito.',
-      ));
+      setErrorMsg(getErrorMessage(error, t('auth.loginError')));
     } finally {
       setIsSubmitting(false);
     }
@@ -43,13 +40,13 @@ const LoginPage = () => {
       showBrand
       footer={(
         <p>
-          Al iniciar sesión, aceptás nuestros{' '}
+          {t('auth.loginFooterTerms')}{' '}
           <Link to="/terminos" className="text-slate-300 hover:text-white underline underline-offset-2 transition-colors">
-            Términos de servicio
+            {t('auth.termsLink')}
           </Link>
-          {' '}y{' '}
+          {' '}{t('auth.and')}{' '}
           <Link to="/privacidad" className="text-slate-300 hover:text-white underline underline-offset-2 transition-colors">
-            Privacidad y seguridad
+            {t('auth.privacyLink')}
           </Link>
         </p>
       )}
@@ -63,7 +60,7 @@ const LoginPage = () => {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="MonArgent@example.com"
+            placeholder={t('auth.emailPlaceholder')}
             className={inputCls}
             autoComplete="email"
           />
@@ -95,7 +92,7 @@ const LoginPage = () => {
               type="button"
               onClick={() => setShowPassword(!showPassword)}
               className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-500 hover:text-amber-400 transition-colors"
-              aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
             >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
@@ -116,10 +113,10 @@ const LoginPage = () => {
           {isSubmitting ? (
             <>
               <Loader2 className="animate-spin" size={18} />
-              <span>Iniciando…</span>
+              <span>{t('auth.loggingIn')}</span>
             </>
           ) : (
-            'Iniciar sesión'
+            t('auth.login')
           )}
         </button>
       </form>
@@ -127,15 +124,15 @@ const LoginPage = () => {
       <div className="flex items-center gap-3 mt-6">
         <div className="h-px flex-1 bg-[#243a5c]" />
         <span className="w-7 h-7 rounded-full border border-[#243a5c] flex items-center justify-center text-[10px] text-slate-500">
-          o
+          {t('auth.or')}
         </span>
         <div className="h-px flex-1 bg-[#243a5c]" />
       </div>
 
       <p className="text-center auth-footer-link mt-5">
-        ¿No tenés cuenta?{' '}
+        {t('auth.noAccountPrompt')}{' '}
         <Link to="/register" className="text-amber-400 font-semibold hover:text-amber-300 transition-colors">
-          Registrate acá
+          {t('auth.registerHere')}
         </Link>
       </p>
     </AuthLayout>

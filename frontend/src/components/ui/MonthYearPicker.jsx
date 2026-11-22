@@ -1,12 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Calendar, ChevronDown } from 'lucide-react';
+import { usePreferences } from '../../context/PreferencesContext';
 
-const MONTHS = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-];
+const MONTHS_ES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-const formatLabel = (month, year) => `${MONTHS[month - 1]} ${year}`;
+const formatLabel = (month, year, language) => `${(language === 'en' ? MONTHS_EN : MONTHS_ES)[month - 1]} ${year}`;
 
 function MiniSelect({ value, options, onChange, label }) {
   const [open, setOpen] = useState(false);
@@ -52,6 +51,7 @@ function MiniSelect({ value, options, onChange, label }) {
 }
 
 const MonthYearPicker = ({ month, year, onChange, label, className = '' }) => {
+  const { t, language } = usePreferences();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -64,7 +64,8 @@ const MonthYearPicker = ({ month, year, onChange, label, className = '' }) => {
   }, []);
 
   const years = Array.from({ length: 8 }, (_, i) => new Date().getFullYear() - 3 + i);
-  const monthOptions = MONTHS.map((name, i) => ({ value: i + 1, label: name }));
+  const names = language === 'en' ? MONTHS_EN : MONTHS_ES;
+  const monthOptions = names.map((name, i) => ({ value: i + 1, label: name }));
   const yearOptions = years.map((y) => ({ value: y, label: String(y) }));
 
   return (
@@ -77,22 +78,22 @@ const MonthYearPicker = ({ month, year, onChange, label, className = '' }) => {
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center justify-between gap-2 rounded-xl bg-[#162238] border border-[#284567] px-3 py-2.5 text-sm text-slate-100 hover:border-amber-400/50 transition-colors"
       >
-        <span className="truncate">{formatLabel(month, year)}</span>
+        <span className="truncate">{formatLabel(month, year, language)}</span>
         <Calendar size={16} className="text-amber-400 shrink-0" />
       </button>
 
       {open && (
         <div className="absolute z-30 mt-2 top-full w-full min-w-[220px] rounded-xl border border-[#284567] bg-[#0f2543] p-3 shadow-xl">
           <div className="grid grid-cols-2 gap-2">
-            <MiniSelect label="Mes" value={month} options={monthOptions} onChange={(v) => onChange(v, year)} />
-            <MiniSelect label="Año" value={year} options={yearOptions} onChange={(v) => onChange(month, v)} />
+            <MiniSelect label={t('common.month')} value={month} options={monthOptions} onChange={(v) => onChange(v, year)} />
+            <MiniSelect label={t('common.year')} value={year} options={yearOptions} onChange={(v) => onChange(month, v)} />
           </div>
           <button
             type="button"
             onClick={() => setOpen(false)}
             className="mt-3 w-full py-2 rounded-lg bg-amber-400/90 text-slate-900 text-sm font-semibold"
           >
-            Listo
+            {t('common.confirm')}
           </button>
         </div>
       )}

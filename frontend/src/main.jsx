@@ -15,17 +15,36 @@ document.documentElement.style.colorScheme = initialPrefs.theme;
 function renderBootError(message) {
   const root = document.getElementById('root');
   if (!root) return;
-  root.innerHTML = `
-    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0B1528;color:#e2e8f0;font-family:system-ui,sans-serif;padding:24px;text-align:center">
-      <div>
-        <p style="font-size:18px;font-weight:600;margin-bottom:8px">No se pudo iniciar MonArgent</p>
-        <p style="font-size:14px;color:#94a3b8;margin-bottom:16px">${message}</p>
-        <button type="button" onclick="location.reload()" style="background:#D9B44A;color:#0f172a;border:none;border-radius:8px;padding:10px 16px;font-weight:600;cursor:pointer">
-          Reintentar
-        </button>
-      </div>
-    </div>
-  `;
+
+  root.replaceChildren();
+
+  const wrapper = document.createElement('div');
+  wrapper.setAttribute(
+    'style',
+    'min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0B1528;color:#e2e8f0;font-family:system-ui,sans-serif;padding:24px;text-align:center',
+  );
+
+  const panel = document.createElement('div');
+  const title = document.createElement('p');
+  title.setAttribute('style', 'font-size:18px;font-weight:600;margin-bottom:8px');
+  title.textContent = 'No se pudo iniciar MonArgent';
+
+  const detail = document.createElement('p');
+  detail.setAttribute('style', 'font-size:14px;color:#94a3b8;margin-bottom:16px');
+  detail.textContent = typeof message === 'string' ? message : 'Recargá la página e intentá de nuevo.';
+
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.setAttribute(
+    'style',
+    'background:#D9B44A;color:#0f172a;border:none;border-radius:8px;padding:10px 16px;font-weight:600;cursor:pointer',
+  );
+  button.textContent = 'Reintentar';
+  button.addEventListener('click', () => window.location.reload());
+
+  panel.append(title, detail, button);
+  wrapper.append(panel);
+  root.append(wrapper);
 }
 
 async function bootstrap() {

@@ -3,9 +3,11 @@ import { useAuth } from '../../context/AuthContext';
 import { ShieldCheck, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import AuthLayout from '../../components/auth/AuthLayout';
+import { usePreferences } from '../../context/PreferencesContext';
 
 const VerificationPage = () => {
   const { verifyCode, resendCode, logout } = useAuth();
+  const { t } = usePreferences();
   const [params] = useSearchParams();
 
   const [code, setCode] = useState(new Array(6).fill(''));
@@ -22,7 +24,7 @@ const VerificationPage = () => {
   const emailFromQuery = params.get('email')?.trim();
   const userEmail = localStorage.getItem('user_email_for_verification')
     || emailFromQuery
-    || 'tu correo';
+    || t('auth.yourEmail');
 
   useEffect(() => {
     if (emailFromQuery) {
@@ -56,7 +58,7 @@ const VerificationPage = () => {
 
     const fullCode = code.join('');
     if (fullCode.length !== 6) {
-      setErrorMsg('Completá los 6 dígitos.');
+      setErrorMsg(t('auth.verifySixDigits'));
       return;
     }
 
@@ -64,7 +66,7 @@ const VerificationPage = () => {
     try {
       await verifyCode({ code: fullCode, password, passwordConfirm });
     } catch (error) {
-      setErrorMsg(error.response?.data?.message || 'Código inválido o vencido.');
+      setErrorMsg(error.response?.data?.message || t('auth.verifyInvalid'));
     } finally {
       setIsSubmitting(false);
     }
@@ -76,9 +78,9 @@ const VerificationPage = () => {
     setIsResending(true);
     try {
       await resendCode();
-      setSuccessMsg('Te enviamos un nuevo código de verificación.');
+      setSuccessMsg(t('auth.verifyCodeSent'));
     } catch (error) {
-      setErrorMsg(error.response?.data?.message || 'No se pudo reenviar el código.');
+      setErrorMsg(error.response?.data?.message || t('auth.verifyResendError'));
     } finally {
       setIsResending(false);
     }
@@ -87,12 +89,12 @@ const VerificationPage = () => {
   return (
     <AuthLayout
       backTo="/login"
-      backLabel="← Volver al inicio de sesión"
+      backLabel={t('auth.backToLogin')}
       onBackClick={logout}
-      title="Verificá tu cuenta"
+      title={t('auth.verifyTitle')}
       subtitle={(
         <>
-          Ingresá el código de 6 dígitos enviado a{' '}
+          {t('auth.verifySubtitle')}{' '}
           <span className="text-on-surface font-medium break-all">{userEmail}</span>
         </>
       )}
@@ -120,7 +122,7 @@ const VerificationPage = () => {
 
         <div>
           <label className="block font-label-sm text-label-sm text-on-surface-variant mb-2">
-            Nueva contraseña
+            {t('auth.newPassword')}
           </label>
           <div className="relative">
             <input
@@ -129,7 +131,7 @@ const VerificationPage = () => {
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Mínimo 8 caracteres"
+              placeholder={t('auth.minChars')}
               className="w-full rounded-lg input-recessed border-none focus:ring-1 focus:ring-primary text-on-surface px-4 py-3 pr-12 transition-all placeholder:text-surface-container-highest"
             />
             <button
@@ -144,7 +146,7 @@ const VerificationPage = () => {
 
         <div>
           <label className="block font-label-sm text-label-sm text-on-surface-variant mb-2">
-            Repetir contraseña
+            {t('auth.repeatPassword')}
           </label>
           <div className="relative">
             <input
@@ -153,7 +155,7 @@ const VerificationPage = () => {
               minLength={8}
               value={passwordConfirm}
               onChange={(e) => setPasswordConfirm(e.target.value)}
-              placeholder="Repetí la contraseña"
+              placeholder={t('auth.repeatPassword')}
               className="w-full rounded-lg input-recessed border-none focus:ring-1 focus:ring-primary text-on-surface px-4 py-3 pr-12 transition-all placeholder:text-surface-container-highest"
             />
             <button
@@ -183,20 +185,20 @@ const VerificationPage = () => {
           disabled={isSubmitting}
           className="w-full bg-primary-container text-on-primary-container font-title-md py-4 rounded-lg shadow-lg hover:brightness-110 active:scale-[0.98] transition-all flex justify-center items-center gap-2"
         >
-          {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : 'Confirmar código'}
+          {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : t('auth.verifyConfirm')}
         </button>
       </form>
 
       <div className="text-center">
         <p className="font-label-sm text-on-surface-variant">
-          ¿No te llegó el correo?{' '}
+          {t('auth.didntGetEmail')}{' '}
           <button
             type="button"
             disabled={isResending}
             onClick={handleResendCode}
             className="text-primary font-bold hover:underline bg-transparent border-none outline-none cursor-pointer"
           >
-            {isResending ? 'Reenviando...' : 'Reenviar código'}
+            {isResending ? t('auth.resending') : t('auth.resendCode')}
           </button>
         </p>
       </div>

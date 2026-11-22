@@ -3,12 +3,14 @@ import { useAuth } from '../../context/AuthContext';
 import { Loader2 } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import AuthLayout from '../../components/auth/AuthLayout';
+import { usePreferences } from '../../context/PreferencesContext';
 
 const inputCls =
   'w-full rounded-xl bg-[#0a1525] border border-[#243a5c] text-white px-4 py-3 text-sm placeholder:text-slate-500 focus:outline-none focus:border-amber-400/70 focus:ring-1 focus:ring-amber-400/30 transition';
 
 const RegisterPage = () => {
   const { register } = useAuth();
+  const { t } = usePreferences();
   const [params] = useSearchParams();
 
   const [name, setName] = useState('');
@@ -24,7 +26,7 @@ const RegisterPage = () => {
     try {
       await register({ name, email });
     } catch (error) {
-      const message = error.response?.data?.message || 'Error al registrar la cuenta. Intentá nuevamente.';
+      const message = error.response?.data?.message || t('auth.registerError');
       setErrorMsg(message);
     } finally {
       setIsSubmitting(false);
@@ -34,43 +36,43 @@ const RegisterPage = () => {
   return (
     <AuthLayout
       backTo="/login"
-      backLabel="← Volver al inicio de sesión"
-      title="Registrarse"
-      subtitle="Ingresá tu nombre y correo. Te enviamos un código de verificación."
+      backLabel={t('auth.backToLogin')}
+      title={t('auth.registerTitle')}
+      subtitle={t('auth.registerSubtitle')}
       footer={(
         <p>
-          Al registrarte, aceptás nuestros{' '}
+          {t('auth.registerFooterTerms')}{' '}
           <Link to="/terminos" className="text-slate-300 hover:text-white underline underline-offset-2 transition-colors">
-            Términos de servicio
+            {t('auth.termsLink')}
           </Link>
-          {' '}y la{' '}
+          {' '}{t('auth.and')}{' '}
           <Link to="/privacidad" className="text-slate-300 hover:text-white underline underline-offset-2 transition-colors">
-            Privacidad y seguridad
+            {t('auth.privacyAndSecurity')}
           </Link>
         </p>
       )}
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="block text-sm text-slate-400 mb-1.5">Nombre</label>
+          <label className="block text-sm text-slate-400 mb-1.5">{t('auth.name')}</label>
           <input
             type="text"
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Mon Argent"
+            placeholder={t('auth.namePlaceholder')}
             className={inputCls}
           />
         </div>
 
         <div>
-          <label className="block text-sm text-slate-400 mb-1.5">Correo electrónico</label>
+          <label className="block text-sm text-slate-400 mb-1.5">{t('auth.email')}</label>
           <input
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="MonArgent@example.com"
+            placeholder={t('auth.emailPlaceholder')}
             className={inputCls}
           />
         </div>
@@ -86,14 +88,14 @@ const RegisterPage = () => {
           disabled={isSubmitting}
           className="w-full bg-gradient-to-r from-amber-400 to-[#E8B923] text-slate-900 font-semibold py-3.5 rounded-xl shadow-[0_4px_24px_rgba(232,185,35,0.25)] hover:brightness-110 active:scale-[0.99] transition-all flex justify-center items-center gap-2 disabled:opacity-60"
         >
-          {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : 'Enviar código'}
+          {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : t('auth.sendCode')}
         </button>
       </form>
 
       <p className="text-center auth-footer-link mt-5">
-        ¿Ya tenés una cuenta?{' '}
+        {t('auth.haveAccount')}{' '}
         <Link to="/login" className="text-amber-400 font-semibold hover:text-amber-300 transition-colors">
-          Iniciá sesión
+          {t('auth.loginHere')}
         </Link>
       </p>
     </AuthLayout>

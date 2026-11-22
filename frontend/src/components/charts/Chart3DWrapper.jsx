@@ -1,14 +1,16 @@
 import React, { lazy, Suspense } from 'react';
 import PieChart2DFallback from './PieChart2DFallback';
 import BarChart2DFallback from './BarChart2DFallback';
+import { usePreferences } from '../../context/PreferencesContext';
 
 const InteractivePieChart3D = lazy(() => import('./InteractivePieChart3D'));
 const InteractiveBarChart3D = lazy(() => import('./InteractiveBarChart3D'));
 
 function ChartLoader() {
+  const { t } = usePreferences();
   return (
     <div className="flex h-[300px] w-full items-center justify-center text-sm text-slate-400">
-      Cargando gráfico 3D…
+      {t('common.loadingChart')}
     </div>
   );
 }

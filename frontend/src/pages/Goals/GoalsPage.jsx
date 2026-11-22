@@ -26,7 +26,9 @@ import {
   formatAmountFromDigits,
   parseAmountDigits,
   sanitizeAmountDigits,
+  toBaseAmount,
 } from '../../utils/currency';
+
 import AppModal, { ModalActions, ModalField, modalInputClass } from '../../components/ui/AppModal';
 import HelpTip from '../../components/ui/HelpTip';
 import { HELP } from '../../content/helpContent';
@@ -145,14 +147,14 @@ const GoalCard = ({ goal, onDeposit, onEdit, onDelete }) => {
         <button
           onClick={() => onEdit(goal)}
           className="p-2 bg-[#1a3457] hover:bg-[#22456f] text-slate-300 rounded-lg transition-colors"
-          title="Editar"
+          title={t('common.edit')}
         >
           <Edit2 size={15} />
         </button>
         <button
           onClick={() => onDelete(goal)}
           className="p-2 bg-[#1a3457] hover:bg-red-500/20 text-slate-300 hover:text-red-400 rounded-lg transition-colors"
-          title="Eliminar"
+          title={t('common.delete')}
         >
           <Trash2 size={15} />
         </button>
@@ -195,7 +197,7 @@ export default function GoalsPage() {
       const res = await apiClient.get('/saving-goals');
       setGoals(res.data);
     } catch (err) {
-      setError(err.response?.data?.message ?? 'No se pudieron cargar los objetivos.');
+      setError(err.response?.data?.message ?? t('goals.loadError'));
     } finally {
       setLoading(false);
     }
@@ -252,7 +254,7 @@ export default function GoalsPage() {
     e.preventDefault();
     setFormError(null);
 
-    const parsedAmount = parseAmountDigits(form.targetAmountDigits);
+    const parsedAmount = toBaseAmount(parseAmountDigits(form.targetAmountDigits));
     const payload = {
       title: form.title.trim(),
       iconKey: form.iconKey || DEFAULT_ICON_KEY,
@@ -261,9 +263,9 @@ export default function GoalsPage() {
       status: editingGoal ? form.status : 'ACTIVE',
     };
 
-    if (!payload.title) return setFormError('El título es obligatorio.');
+    if (!payload.title) return setFormError(t('goals.titleRequired'));
     if (Number.isNaN(parsedAmount) || parsedAmount <= 0)
-      return setFormError('El monto objetivo debe ser mayor a 0.');
+      return setFormError(t('goals.targetGtZero'));
 
     try {
       setFormLoading(true);
@@ -275,7 +277,7 @@ export default function GoalsPage() {
       closeForm();
       await fetchGoals();
     } catch (err) {
-      setFormError(err.response?.data?.message ?? 'Ocurrió un error. Intentá de nuevo.');
+      setFormError(err.response?.data?.message ?? t('goals.genericError'));
     } finally {
       setFormLoading(false);
     }
@@ -297,8 +299,8 @@ export default function GoalsPage() {
     e.preventDefault();
     setDepositError(null);
 
-    const amount = parseAmountDigits(depositAmountDigits);
-    if (Number.isNaN(amount) || amount < 0.01) return setDepositError('El monto mínimo es $0,01.');
+    const amount = toBaseAmount(parseAmountDigits(depositAmountDigits));
+    if (Number.isNaN(amount) || amount < 0.01) return setDepositError(t('goals.minDeposit'));
 
     try {
       setDepositLoading(true);
@@ -306,7 +308,7 @@ export default function GoalsPage() {
       closeDeposit();
       await fetchGoals();
     } catch (err) {
-      setDepositError(err.response?.data?.message ?? 'No se pudo registrar el depósito.');
+      setDepositError(err.response?.data?.message ?? t('goals.depositError'));
     } finally {
       setDepositLoading(false);
     }
@@ -328,7 +330,7 @@ export default function GoalsPage() {
       await fetchGoals();
     } catch (err) {
       closeDelete();
-      setError(err.response?.data?.message ?? 'No se pudo eliminar el objetivo.');
+      setError(err.response?.data?.message ?? t('goals.deleteError'));
     } finally {
       setDeleteLoading(false);
     }
@@ -339,18 +341,10 @@ export default function GoalsPage() {
 
   return (
     <Layout>
-      <div className="text-white max-w-xl mx-auto">
+      <div className="text-white max-w-4xl mx-auto">
         {/* Header — sin título duplicado en objetivos (está en layout) */}
         <div className="flex items-center justify-between gap-3 mb-5">
           <HelpTip title={HELP.goals.title} body={HELP.goals.body} align="left" />
-          <button
-            onClick={openCreate}
-            className="flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold px-4 py-2 rounded-full transition-colors text-sm"
-          >
-            <Plus size={16} />
-            {t('goals.new')}
-
-          </button>
         </div>
 
         {/* Stats inline */}
@@ -371,7 +365,7 @@ export default function GoalsPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-3">
             <Loader2 size={32} className="text-amber-400 animate-spin" />
-            <p className="text-slate-400 text-sm">Cargando objetivos...</p>
+            <p className="text-slate-400 text-sm">{t('goals.loading')}</p>
           </div>
         ) : goals.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
@@ -379,8 +373,8 @@ export default function GoalsPage() {
               <Target size={28} className="text-amber-400" />
             </div>
             <div className="text-center">
-              <p className="text-white font-medium">Todavía no tenés objetivos</p>
-              <p className="text-slate-400 text-sm mt-1">Creá tu primer objetivo de ahorro para empezar.</p>
+              <p className="text-white font-medium">{t('goals.noGoals')}</p>
+              <p className="text-slate-400 text-sm mt-1">{t('goals.createFirst')}</p>
             </div>
           </div>
         ) : (
@@ -399,8 +393,8 @@ export default function GoalsPage() {
 
             {completedGoals.length > 0 && (
               <section className="mt-8">
-                <p className="text-[10px] tracking-[0.2em] uppercase text-slate-400 mb-3">Completados</p>
-                <div className="space-y-3">
+                <p className="text-[10px] tracking-[0.2em] uppercase text-slate-400 mb-3">{t('goals.completed')}</p>
+                <div className="grid grid-cols-1 gap-3">
                   {completedGoals.map((goal) => {
                     const CompletedIcon = resolveGoalIcon(goal.iconKey);
                     return (
@@ -428,28 +422,38 @@ export default function GoalsPage() {
         )}
       </div>
 
+      <button
+        type="button"
+        onClick={openCreate}
+        className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-30 w-14 h-14 rounded-full bg-[#E8B923] text-slate-900 shadow-lg flex items-center justify-center hover:brightness-110"
+        aria-label={t('goals.new')}
+        title={t('goals.new')}
+      >
+        <Plus size={28} strokeWidth={2.5} />
+      </button>
+
       {showForm && (
-        <AppModal title={editingGoal ? 'Editar objetivo' : t('goals.new')} open onClose={closeForm}>
+        <AppModal title={editingGoal ? t('goals.edit') : t('goals.new')} open onClose={closeForm}>
 
           <form onSubmit={handleFormSubmit} className="flex flex-col gap-4">
-            <ModalField label="Título">
+            <ModalField label={t('goals.titleLabel')}>
               <input
                 className={modalInputClass}
                 name="title"
                 value={form.title}
                 onChange={handleFormChange}
-                placeholder="Ejemplo: Vacaciones"
+                placeholder={t('goals.titlePlaceholder')}
                 maxLength={150}
                 required
               />
             </ModalField>
-            <ModalField label="Ícono">
+            <ModalField label={t('goals.icon')}>
               <IconPicker
                 value={form.iconKey}
                 onChange={(iconKey) => setForm((prev) => ({ ...prev, iconKey }))}
               />
             </ModalField>
-            <ModalField label="Monto">
+            <ModalField label={t('goals.amount')}>
               <input
                 className={`${modalInputClass} font-amount`}
                 name="targetAmountDisplay"
@@ -462,7 +466,7 @@ export default function GoalsPage() {
               />
             </ModalField>
             <div className="grid grid-cols-2 gap-3">
-              <ModalField label="Desde">
+              <ModalField label={t('goals.from')}>
                 <input
                   className={`${modalInputClass} opacity-70`}
                   name="startDate"
@@ -471,7 +475,7 @@ export default function GoalsPage() {
                   readOnly
                 />
               </ModalField>
-              <ModalField label="Hasta">
+              <ModalField label={t('goals.to')}>
                 <input
                   className={modalInputClass}
                   name="endDate"
@@ -483,12 +487,12 @@ export default function GoalsPage() {
               </ModalField>
             </div>
             {editingGoal && (
-              <ModalField label="Estado">
+              <ModalField label={t('goals.status')}>
                 <select className={modalInputClass} name="status" value={form.status} onChange={handleFormChange}>
-                  <option value="ACTIVE">Activa</option>
-                  <option value="PAUSED">Pausada</option>
-                  <option value="COMPLETED">Completada</option>
-                  <option value="CANCELLED">Cancelada</option>
+                  <option value="ACTIVE">{t('goals.statusActive')}</option>
+                  <option value="PAUSED">{t('goals.statusPaused')}</option>
+                  <option value="COMPLETED">{t('goals.statusCompleted')}</option>
+                  <option value="CANCELLED">{t('goals.statusCancelled')}</option>
                 </select>
               </ModalField>
             )}
@@ -501,7 +505,7 @@ export default function GoalsPage() {
 
             <ModalActions
               onCancel={closeForm}
-              submitLabel={editingGoal ? 'Guardar' : 'Crear objetivo'}
+              submitLabel={editingGoal ? t('common.save') : t('goals.create')}
               loading={formLoading}
             />
           </form>
@@ -509,20 +513,20 @@ export default function GoalsPage() {
       )}
 
       {depositGoal && (
-        <AppModal title={`Depositar en "${depositGoal.title}"`} open onClose={closeDeposit}>
+        <AppModal title={t('goals.depositIn', { title: depositGoal.title })} open onClose={closeDeposit}>
           <form onSubmit={handleDeposit} className="flex flex-col gap-4">
             <div className="bg-slate-700/40 border border-slate-600 rounded-xl px-4 py-3 text-sm">
               <div className="flex justify-between text-slate-400 mb-1">
-                <span>Saldo actual</span>
+                <span>{t('goals.currentBalance')}</span>
                 <span className="text-white font-amount">{formatPeso(depositGoal.currentAmount)}</span>
               </div>
               <div className="flex justify-between text-slate-400">
-                <span>Objetivo</span>
+                <span>{t('goals.target')}</span>
                 <span className="text-white font-amount">{formatPeso(depositGoal.targetAmount)}</span>
               </div>
             </div>
 
-            <ModalField label="Monto a depositar">
+            <ModalField label={t('goals.depositAmount')}>
               <input
                 className={`${modalInputClass} font-amount`}
                 type="text"
@@ -551,12 +555,11 @@ export default function GoalsPage() {
       )}
 
       {deleteGoal && (
-        <AppModal title="Eliminar objetivo" open onClose={closeDelete}>
+        <AppModal title={t('goals.deleteTitle')} open onClose={closeDelete}>
           <div className="flex flex-col gap-5">
             <p className="text-slate-300 text-sm">
-              ¿Estás seguro de que querés eliminar{' '}
-              <span className="text-white font-semibold">&ldquo;{deleteGoal.title}&rdquo;</span>? Esta acción
-              no se puede deshacer.
+              {t('goals.deleteConfirm')}{' '}
+              <span className="text-white font-semibold">&ldquo;{deleteGoal.title}&rdquo;</span>? {t('goals.deleteUndo')}
             </p>
             <div className="flex gap-3">
               <button
@@ -564,7 +567,7 @@ export default function GoalsPage() {
                 onClick={closeDelete}
                 className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 py-2.5 rounded-xl text-sm font-medium transition-colors"
               >
-                Cancelar
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -573,7 +576,7 @@ export default function GoalsPage() {
                 className="flex-1 bg-red-500 hover:bg-red-400 disabled:opacity-50 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
               >
                 {deleteLoading && <Loader2 size={14} className="animate-spin" />}
-                Eliminar
+                {t('common.delete')}
               </button>
             </div>
           </div>

@@ -1,6 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { getPreferences, setPreferences as persistPreferences } from '../utils/preferencesStore';
 import { translate } from '../i18n/translations';
+import { getFxState, refreshFxRate } from '../utils/fxStore';
+
 
 const PreferencesContext = createContext(null);
 
@@ -13,11 +15,30 @@ function applyTheme(theme) {
 
 export function PreferencesProvider({ children }) {
   const [prefs, setPrefs] = useState(() => getPreferences());
+  const [fx, setFx] = useState(() => getFxState());
 
   useEffect(() => {
     applyTheme(prefs.theme);
     document.documentElement.lang = prefs.language === 'en' ? 'en' : 'es';
   }, [prefs.theme, prefs.language]);
+
+  useEffect(() => {
+    let active = true;
+    refreshFxRate().then((next) => {
+      if (active) setFx({ ...next });
+    });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (prefs.currency !== 'USD') return;
+    let active = true;
+    refreshFxRate().then((next) => {
+      if (active) setFx({ ...next });
+    });
+    return () => { active = false; };
+  }, [prefs.currency]);
+
 
   const update = useCallback((patch) => {
     setPrefs(() => {
@@ -45,14 +66,17 @@ export function PreferencesProvider({ children }) {
   const value = useMemo(
     () => ({
       ...prefs,
+      fx,
+      refreshFxRate: async () => setFx({ ...(await refreshFxRate({ force: true })) }),
       updatePreferences: update,
       toggleTheme,
       toggleCurrency,
       toggleLanguage,
       t,
     }),
-    [prefs, update, toggleTheme, toggleCurrency, toggleLanguage, t]
+    [prefs, fx, update, toggleTheme, toggleCurrency, toggleLanguage, t]
   );
+
 
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;
 }

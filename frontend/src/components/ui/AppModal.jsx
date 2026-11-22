@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
 import MobileModal from './MobileModal';
+import { usePreferences } from '../../context/PreferencesContext';
 
 export const modalInputClass =
   'w-full bg-slate-700/50 border border-slate-600 text-white rounded-lg px-3 py-2.5 text-sm placeholder-slate-400 focus:outline-none focus:border-amber-500 transition-colors';
@@ -13,6 +14,7 @@ export default function AppModal({
   children,
   zIndex = 'z-50',
 }) {
+  const { t } = usePreferences();
   if (!open) return null;
 
   return (
@@ -23,7 +25,7 @@ export default function AppModal({
             type="button"
             onClick={() => onClose?.()}
             className="absolute right-4 top-4 p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700 transition-colors"
-            aria-label="Cerrar"
+            aria-label={t('common.close')}
           >
             <X size={18} />
           </button>
@@ -45,6 +47,7 @@ export function ModalField({ label, children }) {
 }
 
 export function ModalActions({ onCancel, submitLabel, loading, submitType = 'submit', disabled }) {
+  const { t } = usePreferences();
   return (
     <div className="flex gap-3 pt-2">
       <button
@@ -52,14 +55,14 @@ export function ModalActions({ onCancel, submitLabel, loading, submitType = 'sub
         onClick={onCancel}
         className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-300 py-2.5 rounded-xl text-sm font-medium transition-colors"
       >
-        Cancelar
+        {t('common.cancel')}
       </button>
       <button
         type={submitType}
         disabled={loading || disabled}
         className="flex-1 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-900 py-2.5 rounded-xl text-sm font-semibold transition-colors"
       >
-        {loading ? 'Guardando...' : submitLabel}
+        {loading ? t('common.saving') : submitLabel}
       </button>
     </div>
   );

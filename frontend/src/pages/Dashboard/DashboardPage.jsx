@@ -69,91 +69,75 @@ const DashboardPage = () => {
 
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto text-slate-100 pb-4">
-        <section className="rounded-3xl border border-[#284567] bg-[#0f2543] p-5 max-w-xl">
-          <p className="text-[10px] tracking-[0.25em] uppercase text-slate-400">{t('dashboard.balance')}</p>
-
-          <h2 className="text-3xl sm:text-4xl font-amount text-money-balance mt-2">{formatPeso(stats.balance)}</h2>
-
-          <div className="mt-4 h-px bg-[#2c496d]" />
-
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">{t('dashboard.income')}</p>
-
-              <p className="text-xl font-amount text-money-income mt-1">{formatPeso(stats.income)}</p>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">{t('dashboard.expense')}</p>
-
-              <p className="text-xl font-amount text-money-expense mt-1">{formatPeso(stats.expenses)}</p>
-            </div>
-          </div>
-        </section>
-
-        <section className="grid grid-cols-4 gap-3 mt-4 max-w-xl">
-          {quickActions.map(({ label, icon: Icon, onClick }) => (
-            <button
-              key={label}
-              onClick={onClick}
-              className="rounded-2xl border border-[#284567] bg-[#0f2543] py-4 px-2 text-center hover:border-amber-400/60"
-            >
-              <Icon size={16} className="mx-auto text-slate-200" />
-              <p className="text-xs mt-2 text-slate-200">{label}</p>
-            </button>
-          ))}
-        </section>
-
-        <ExpenseChartsSection categories={categories} />
-
-        <section className="mt-4 max-w-xl">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-section-title">{t('dashboard.recent')}</h3>
-
-            <button
-              onClick={() => navigate('/transactions')}
-              className="text-amber-300 text-sm font-semibold"
-            >
-              Ver todos
-            </button>
-          </div>
-
-          <div className="space-y-2">
-            {recentTransactions.length === 0 && (
-              <div className="rounded-2xl border border-[#284567] bg-[#0f2543] p-4 text-slate-300 text-sm">
-                No hay movimientos para mostrar este mes.
+      <div className="max-w-7xl mx-auto text-slate-100 pb-4">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          <div className="space-y-4 min-w-0">
+            <section className="rounded-3xl border border-[#284567] bg-[#0f2543] p-5">
+              <p className="text-[10px] tracking-[0.25em] uppercase text-slate-400">{t('dashboard.balance')}</p>
+              <h2 className="text-3xl sm:text-4xl font-amount text-money-balance mt-2">{formatPeso(stats.balance)}</h2>
+              <div className="mt-4 h-px bg-[#2c496d]" />
+              <div className="grid grid-cols-2 gap-4 mt-4">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">{t('dashboard.income')}</p>
+                  <p className="text-xl font-amount text-money-income mt-1">{formatPeso(stats.income)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">{t('dashboard.expense')}</p>
+                  <p className="text-xl font-amount text-money-expense mt-1">{formatPeso(stats.expenses)}</p>
+                </div>
               </div>
-            )}
+            </section>
 
-            {recentTransactions.map((tx, index) => {
-              const expense = tx.type === 'EXPENSE';
-              const CategoryIcon = tx.title?.toLowerCase().includes('netflix') ? Play : ShoppingCart;
-
-              return (
-                <article
-                  key={tx.id ?? `${tx.title}-${index}`}
-                  className="rounded-2xl border border-[#284567] bg-[#0f2543] p-4 flex items-center justify-between"
+            <section className="grid grid-cols-4 gap-3">
+              {quickActions.map(({ label, icon: Icon, onClick }) => (
+                <button
+                  key={label}
+                  onClick={onClick}
+                  className="rounded-2xl border border-[#284567] bg-[#0f2543] py-3 px-2 text-center hover:border-amber-400/60"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-full bg-[#1a3457] flex items-center justify-center text-slate-200">
-                      <CategoryIcon size={16} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-item-title truncate">{tx.title || 'Movimiento'}</p>
-                      <p className="text-xs text-slate-400 truncate">
-                        {tx.categoryName || 'Sin categoría'} · {formatArgentineDate(tx.date)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <p className={`font-amount text-lg ${expense ? 'text-money-expense' : 'text-money-income'}`}>
-                    {formatPesoSigned(tx.amount, tx.type)}
-                  </p>
-                </article>
-              );
-            })}
+                  <Icon size={16} className="mx-auto text-slate-200" />
+                  <p className="text-[11px] mt-2 text-slate-200 leading-tight">{label}</p>
+                </button>
+              ))}
+            </section>
           </div>
-        </section>
+
+          <section className="rounded-3xl border border-[#284567] bg-[#0f2543] p-5 min-w-0">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-section-title">{t('dashboard.recent')}</h3>
+              <button
+                onClick={() => navigate('/transactions')}
+                className="text-amber-300 text-sm font-semibold"
+              >
+                {t('common.seeAll')}
+              </button>
+            </div>
+
+            <div className="space-y-1">
+              {recentTransactions.length === 0 && (
+                <p className="text-slate-400 text-sm py-2">{t('dashboard.noMoves')}</p>
+              )}
+
+              {recentTransactions.map((tx, index) => {
+                const expense = tx.type === 'EXPENSE';
+                return (
+                  <article
+                    key={tx.id ?? `${tx.title}-${index}`}
+                    className={`grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-x-3 px-2 py-1.5 text-sm rounded-md border ${expense ? 'border-red-400/20' : 'border-emerald-400/20'}`}
+                  >
+                    <span className="text-slate-100 truncate text-left">{tx.title || 'Movimiento'}</span>
+                    <span className="text-slate-400 truncate text-left">{tx.categoryName || t('transactions.noCategory', 'Sin categoría')}</span>
+                    <span className={`font-amount text-left truncate ${expense ? 'text-money-expense' : 'text-money-income'}`}>
+                      {formatPesoSigned(tx.amount, tx.type)}
+                    </span>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+
+        <ExpenseChartsSection categories={categories} compact />
       </div>
     </Layout>
   );

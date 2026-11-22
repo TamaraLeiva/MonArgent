@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import apiClient from '../../services/api';
 import PeriodFilter from '../ui/PeriodFilter';
+import { usePreferences } from '../../context/PreferencesContext';
 
 
 import { Chart3DBar, Chart3DPie } from '../charts/Chart3DWrapper';
@@ -25,7 +26,8 @@ const fetchMonthExpenses = async (month, year) => {
   return data;
 };
 
-const ExpenseChartsSection = ({ categories }) => {
+const ExpenseChartsSection = ({ categories, compact = false }) => {
+  const { t } = usePreferences();
   const now = new Date();
   const comparisonRef = useRef(null);
   const comparisonChartRef = useRef(null);
@@ -193,13 +195,14 @@ const ExpenseChartsSection = ({ categories }) => {
     }
   };
 
+  const chartHeightClass = compact ? 'h-56 xl:h-60' : 'h-80';
+
   return (
     <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
       <div className="rounded-3xl border border-[#284567] bg-[#0f2543] p-5">
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
             <h3 className="text-section-title">Comparativa mensual de gastos</h3>
-            <p className="text-xs text-slate-400 mt-1">Comparación mensual por rango de meses</p>
 
           </div>
           <div className="flex items-center gap-2">
@@ -230,13 +233,13 @@ const ExpenseChartsSection = ({ categories }) => {
 
 
 
-        <div ref={comparisonRef} className="h-80">
+        <div ref={comparisonRef} className={chartHeightClass}>
           {selectedMonths.length === 0 ? (
             <p className="text-sm text-slate-400 pt-8 text-center">
               El mes inicial debe ser anterior o igual al final.
             </p>
           ) : loadingComparison ? (
-            <p className="text-sm text-slate-400 pt-8 text-center">Cargando...</p>
+            <p className="text-sm text-slate-400 pt-8 text-center">{t('common.loading')}</p>
           ) : (
             <div ref={comparisonChartRef} className="h-full w-full overflow-hidden rounded-xl bg-gradient-to-b from-[#132a4a]/40 to-transparent">
               <Chart3DBar data={comparisonData} className="h-full w-full" />
@@ -249,7 +252,6 @@ const ExpenseChartsSection = ({ categories }) => {
         <div className="flex items-start justify-between gap-3 mb-4">
           <div>
             <h3 className="text-section-title">Gastos por categoría</h3>
-            <p className="text-xs text-slate-400 mt-1">Distribución del período · arrastrá para girar</p>
           </div>
           <div className="flex items-center gap-2">
             <PeriodFilter
@@ -273,9 +275,9 @@ const ExpenseChartsSection = ({ categories }) => {
         </div>
 
 
-        <div ref={pieRef} className="h-80">
+        <div ref={pieRef} className={chartHeightClass}>
           {loadingPie ? (
-            <p className="text-sm text-slate-400 pt-8 text-center">Cargando...</p>
+            <p className="text-sm text-slate-400 pt-8 text-center">{t('common.loading')}</p>
           ) : pieData.length === 0 ? (
             <p className="text-sm text-slate-400 pt-8 text-center">No hay gastos en este mes.</p>
           ) : (

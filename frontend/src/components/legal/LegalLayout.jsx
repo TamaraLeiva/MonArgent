@@ -1,8 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import BrandLogo from '../brand/BrandLogo';
+import { usePreferences } from '../../context/PreferencesContext';
 
-const LegalLayout = ({ title, children }) => (
+const LegalLayout = ({ title, children }) => {
+  const { t } = usePreferences();
+  return (
   <div className="min-h-[100dvh] bg-[#080f1a] text-slate-100 antialiased font-body">
     <div className="fixed inset-0 z-0 pointer-events-none">
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[320px] bg-amber-500/[0.05] rounded-full blur-[100px]" />
@@ -25,18 +28,19 @@ const LegalLayout = ({ title, children }) => (
       </article>
 
       <div className="mt-6 flex flex-wrap justify-center gap-4 text-xs text-slate-500">
-        <Link to="/terminos" className="hover:text-amber-400 transition-colors">Términos de servicio</Link>
+        <Link to="/terminos" className="hover:text-amber-400 transition-colors">{t('legal.terms')}</Link>
         <span aria-hidden>·</span>
-        <Link to="/privacidad" className="hover:text-amber-400 transition-colors">Privacidad y seguridad</Link>
+        <Link to="/privacidad" className="hover:text-amber-400 transition-colors">{t('legal.privacy')}</Link>
         <span aria-hidden>·</span>
-        <Link to="/login" className="hover:text-amber-400 transition-colors">Volver al inicio</Link>
+        <Link to="/login" className="hover:text-amber-400 transition-colors">{t('legal.backHome')}</Link>
       </div>
 
       <p className="text-center text-[11px] text-slate-600 mt-4">
-        Última actualización: julio de 2026
+        {t('legal.lastUpdated')}
       </p>
     </div>
   </div>
-);
+  );
+};
 
 export default LegalLayout;

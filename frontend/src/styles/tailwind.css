@@ -210,6 +210,8 @@
 
 
 
+.light .text-blue-950 { color: #172554 !important; }
+.light .text-blue-900 { color: #1e3a8a !important; }
 .light .text-slate-100,
 .light .text-white { color: #172033 !important; }
 .light .text-slate-200 { color: #24324a !important; }

@@ -6,7 +6,7 @@ import { usePreferences } from '../../context/PreferencesContext';
 import { groupService } from '../../services/groupService';
 
 import useLiveRefresh from '../../hooks/useLiveRefresh';
-import { ChevronRight, Loader2, Trash2 } from 'lucide-react';
+import { ChevronRight, Loader2, Trash2, Plus } from 'lucide-react';
 import AppModal, { ModalActions, ModalField, modalInputClass } from '../../components/ui/AppModal';
 import HelpTip from '../../components/ui/HelpTip';
 import { HELP } from '../../content/helpContent';
@@ -32,6 +32,7 @@ const GroupsPage = () => {
   const [listTab, setListTab] = useState('active');
   const [historyGroups, setHistoryGroups] = useState([]);
   const [deletingGroupId, setDeletingGroupId] = useState(null);
+  const [expandedHistoryId, setExpandedHistoryId] = useState(null);
   const { askConfirm, confirmDialog } = useConfirmDialog();
 
   const loadData = useCallback(async (options = {}) => {
@@ -51,7 +52,7 @@ const GroupsPage = () => {
       setHistoryGroups(historyRes.data);
     } catch (err) {
       if (!silent) {
-        setError(err.response?.data?.message || 'No se pudieron cargar los grupos.');
+        setError(err.response?.data?.message || t('groups.loadError'));
       }
     } finally {
       if (!silent) {
@@ -79,7 +80,7 @@ const GroupsPage = () => {
       const { data } = await groupService.getById(groupId);
       setSelectedGroup(data);
     } catch (err) {
-      setError(err.response?.data?.message || 'No se pudo abrir el grupo.');
+      setError(err.response?.data?.message || t('groups.openError'));
     }
   };
 
@@ -92,7 +93,7 @@ const GroupsPage = () => {
       await updateProfile(aliasInput.trim());
       setSuccess('Alias guardado.');
     } catch (err) {
-      setError(err.response?.data?.message || 'No se pudo guardar el alias.');
+      setError(err.response?.data?.message || t('groups.saveAliasError'));
     } finally {
       setSavingAlias(false);
     }
@@ -108,7 +109,7 @@ const GroupsPage = () => {
       setNewDescription('');
       await loadData();
     } catch (err) {
-      setError(err.response?.data?.message || 'No se pudo crear el grupo.');
+      setError(err.response?.data?.message || t('groups.createError'));
     }
   };
 
@@ -123,7 +124,7 @@ const GroupsPage = () => {
         await loadData();
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'No se pudo aceptar la invitación.');
+      setError(err.response?.data?.message || t('groups.acceptError'));
     }
   };
 
@@ -133,16 +134,16 @@ const GroupsPage = () => {
       await groupService.rejectInvitation(id);
       await loadData();
     } catch (err) {
-      setError(err.response?.data?.message || 'No se pudo rechazar la invitación.');
+      setError(err.response?.data?.message || t('groups.rejectError'));
     }
   };
 
   const handleDeleteGroup = async (e, group) => {
     e.stopPropagation();
     const ok = await askConfirm({
-      title: 'Eliminar grupo',
-      message: `¿Eliminar "${group.title}" del historial? Esta acción no se puede deshacer.`,
-      confirmLabel: 'Eliminar',
+      title: t('groups.deleteGroup'),
+      message: t('groups.deleteGroupConfirm', { title: group.title }),
+      confirmLabel: t('common.delete'),
       danger: true,
     });
     if (!ok) {
@@ -154,7 +155,7 @@ const GroupsPage = () => {
       await groupService.delete(group.id);
       await loadData();
     } catch (err) {
-      setError(err.response?.data?.message || 'No se pudo eliminar el grupo.');
+      setError(err.response?.data?.message || t('groups.deleteError'));
     } finally {
       setDeletingGroupId(null);
     }
@@ -193,32 +194,21 @@ const GroupsPage = () => {
   return (
     <Layout>
       {confirmDialog}
-      <div className="text-white max-w-xl mx-auto">
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <HelpTip title={HELP.groups.title} body={HELP.groups.body} align="left" />
-          <button
-            type="button"
-            onClick={() => setShowCreate(true)}
-            className="flex items-center justify-center w-11 h-11 rounded-full bg-amber-400 text-slate-900 font-semibold shadow-lg hover:brightness-110"
-            aria-label="Nuevo grupo"
-          >
-            <span className="text-xl leading-none">+</span>
-          </button>
-        </div>
+      <div className="text-white max-w-6xl mx-auto">
 
-        <div className="mb-4 rounded-xl border border-[#284567] bg-[#0f2543] p-4 space-y-3">
+        <div className="mb-4 rounded-xl border border-cyan-400/40 bg-cyan-400/5 p-4 space-y-3">
           <div>
-            <p className="text-sm font-medium">Tu alias para cobros</p>
+            <p className="text-sm font-semibold text-cyan-200">{t('groups.yourAlias')}</p>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-              Ingresá tu alias (preferentemente de Mercado Pago) para que te transfieran cuando te deben.
+              {t('groups.aliasHelp')}
             </p>
           </div>
-          <form onSubmit={handleSaveAlias} className="flex gap-2">
+          <form onSubmit={handleSaveAlias} className="flex gap-2 items-center">
             <input
               minLength={3}
               value={aliasInput}
               onChange={(e) => setAliasInput(e.target.value)}
-              placeholder="Ej: tu.alias.mp"
+              placeholder={t('groups.aliasPlaceholder')}
               className="flex-1 rounded-lg bg-[#0b2034] border border-[#284567] px-3 py-2 text-sm text-slate-100"
             />
             <button
@@ -226,7 +216,7 @@ const GroupsPage = () => {
               disabled={savingAlias || !aliasInput.trim()}
               className="rounded-lg border border-[#284567] px-4 py-2 text-sm text-slate-200 disabled:opacity-50"
             >
-              {savingAlias ? '...' : 'Guardar'}
+              {savingAlias ? '...' : t('groups.save')}
             </button>
           </form>
         </div>
@@ -235,11 +225,11 @@ const GroupsPage = () => {
 
         {invitations.length > 0 && (
           <section className="mb-4 rounded-2xl border border-amber-400/30 bg-amber-400/5 p-4 space-y-2">
-            <p className="text-sm font-semibold text-amber-300">Invitaciones pendientes</p>
+            <p className="text-sm font-semibold text-amber-300">{t('groups.invitations')}</p>
             {invitations.map((inv) => (
               <div key={inv.id} className="flex items-center justify-between gap-2 text-sm">
                 <span>
-                  {inv.invitedByName} te invitó a <strong>{inv.groupTitle}</strong>
+                  {inv.invitedByName} {t('groups.invitedTo')} <strong>{inv.groupTitle}</strong>
                 </span>
                 <div className="flex gap-2">
                   <button
@@ -247,14 +237,14 @@ const GroupsPage = () => {
                     onClick={() => handleAcceptInvitation(inv)}
                     className="rounded-lg bg-amber-400 text-slate-900 px-3 py-1 text-xs font-semibold"
                   >
-                    Aceptar
+                    {t('notifications.accept')}
                   </button>
                   <button
                     type="button"
                     onClick={() => handleRejectInvitation(inv.id)}
                     className="rounded-lg border border-[#284567] px-3 py-1 text-xs"
                   >
-                    Rechazar
+                    {t('notifications.reject')}
                   </button>
                 </div>
               </div>
@@ -267,108 +257,120 @@ const GroupsPage = () => {
             <Loader2 className="animate-spin text-amber-400" />
           </div>
         ) : (
-          <>
-            <div className="flex gap-2 mb-4">
-              <button
-                type="button"
-                onClick={() => setListTab('active')}
-                className={`flex-1 rounded-lg py-2 text-sm font-medium ${
-                  listTab === 'active' ? 'bg-amber-400 text-slate-900' : 'border border-[#284567] text-slate-300'
-                }`}
-              >
-                {t('groups.active')}
-
-              </button>
-              <button
-                type="button"
-                onClick={() => setListTab('history')}
-                className={`flex-1 rounded-lg py-2 text-sm font-medium ${
-                  listTab === 'history' ? 'bg-amber-400 text-slate-900' : 'border border-[#284567] text-slate-300'
-                }`}
-              >
-                {t('groups.history')}
-
-              </button>
-            </div>
-            <div className="space-y-3">
-              {(listTab === 'active' ? groups : historyGroups).length === 0 ? (
-                <p className="text-slate-400 text-sm">
-                  {listTab === 'active'
-                    ? 'Todavía no tenés grupos. Creá uno para empezar.'
-                    : 'No hay grupos cerrados en el historial.'}
-                </p>
-              ) : (
-                (listTab === 'active' ? groups : historyGroups).map((group) => (
-                  <article
-                    key={group.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => openGroup(group.id)}
-                    onKeyDown={(e) => e.key === 'Enter' && openGroup(group.id)}
-                    className="bg-slate-800/50 border border-slate-700 rounded-lg p-3 md:p-4 cursor-pointer transition-all duration-200 hover:border-slate-600 hover:shadow-lg hover:-translate-y-0.5"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <p className="text-item-title truncate">{group.title}</p>
-                        <p className="text-item-meta">{group.memberCount} {group.memberCount === 1 ? t('groups.member') : t('groups.members')}</p>
-
-                        {listTab === 'history' && (
-                          <p className="text-xs text-emerald-300">Cerrado</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+            <section className="rounded-2xl border border-orange-400/30 bg-[#0f2543] p-4">
+              <p className="text-sm font-semibold text-orange-300 mb-1">{t('groups.history')}</p>
+              <p className="text-xs text-slate-400 mb-3">{t('groups.closedHistory')}</p>
+              <div className="space-y-2">
+                {historyGroups.length === 0 ? (
+                  <p className="text-slate-400 text-sm">{t('groups.noClosed')}</p>
+                ) : (
+                  historyGroups.map((group) => {
+                    const expanded = expandedHistoryId === group.id;
+                    return (
+                      <article key={group.id} className="rounded-xl border border-[#284567] bg-[#102744]">
+                        <button
+                          type="button"
+                          onClick={() => setExpandedHistoryId(expanded ? null : group.id)}
+                          className="w-full px-3 py-2.5 flex items-center justify-between gap-2 text-left"
+                        >
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{group.title}</p>
+                            <p className="text-[11px] text-slate-400">{t('groups.closed')} · {group.memberCount} {group.memberCount === 1 ? t('groups.member') : t('groups.members')}</p>
+                          </div>
+                          <ChevronRight size={16} className={`text-slate-500 shrink-0 transition-transform ${expanded ? 'rotate-90' : ''}`} />
+                        </button>
+                        {expanded && (
+                          <div className="px-3 pb-3 text-sm space-y-1 border-t border-slate-700/40 pt-2">
+                            <p className="text-slate-300"><span className="text-slate-500">{t('groups.total')}:</span> <span className="font-amount">{formatPeso(group.totalExpenses)}</span></p>
+                            <p className="text-slate-300"><span className="text-slate-500">{t('groups.balance')}:</span> <span className={`font-amount ${Number(group.myBalance) >= 0 ? 'text-money-income' : 'text-money-expense'}`}>{formatPesoBalance(group.myBalance)}</span></p>
+                            <div className="flex gap-2 pt-1">
+                              <button type="button" onClick={() => openGroup(group.id)} className="text-xs text-amber-300 font-semibold">{t('groups.viewDetail')}</button>
+                              {group.owner && (
+                                <button
+                                  type="button"
+                                  disabled={deletingGroupId === group.id}
+                                  onClick={(e) => handleDeleteGroup(e, group)}
+                                  className="text-xs text-red-300 disabled:opacity-50"
+                                >
+                                  {t('groups.delete')}
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         )}
-                        <p className="text-item-meta pt-0.5">
-                          <span className="text-label-caps mr-2">Total</span>
-                          <span className="font-amount text-slate-200">{formatPeso(group.totalExpenses)}</span>
-                        </p>
-                        <p className="text-item-meta">
-                          <span className="text-label-caps mr-2">Saldo</span>
-                          <span className={`font-amount ${Number(group.myBalance) >= 0 ? 'text-money-income' : 'text-money-expense'}`}>
-                            {formatPesoBalance(group.myBalance)}
-                          </span>
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0 mt-1">
-                        {listTab === 'history' && group.owner && (
-                          <button
-                            type="button"
-                            aria-label="Eliminar grupo del historial"
-                            disabled={deletingGroupId === group.id}
-                            onClick={(e) => handleDeleteGroup(e, group)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-300 hover:bg-red-400/10 disabled:opacity-50"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        )}
-                        <ChevronRight size={18} className="text-slate-500" />
-                      </div>
-                    </div>
-                  </article>
-                ))
-              )}
+                      </article>
+                    );
+                  })
+                )}
+              </div>
+            </section>
+
+            <div className="space-y-4">
+              <section className="rounded-2xl border border-emerald-400/30 bg-[#0f2543] p-4">
+                <p className="text-sm font-semibold text-emerald-300 mb-1">{t('groups.active')}</p>
+                <p className="text-xs text-slate-400 mb-3">{t('groups.activeDesc')}</p>
+                <div className="space-y-2">
+                  {groups.length === 0 ? (
+                    <p className="text-slate-400 text-sm">{t('groups.noActive')}</p>
+                  ) : (
+                    groups.map((group) => (
+                      <article
+                        key={group.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => openGroup(group.id)}
+                        onKeyDown={(e) => e.key === 'Enter' && openGroup(group.id)}
+                        className="bg-[#102744] border border-[#284567] rounded-lg p-3 cursor-pointer hover:border-amber-400/40 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">{group.title}</p>
+                            <p className="text-[11px] text-slate-400">{group.memberCount} {group.memberCount === 1 ? t('groups.member') : t('groups.members')} · {t('groups.total')} <span className="font-amount text-slate-300">{formatPeso(group.totalExpenses)}</span></p>
+                            <p className="text-[11px] text-slate-400">{t('groups.balance')} <span className={`font-amount ${Number(group.myBalance) >= 0 ? 'text-money-income' : 'text-money-expense'}`}>{formatPesoBalance(group.myBalance)}</span></p>
+                          </div>
+                          <ChevronRight size={16} className="text-slate-500 shrink-0 mt-1" />
+                        </div>
+                      </article>
+                    ))
+                  )}
+                </div>
+              </section>
             </div>
-          </>
+          </div>
         )}
 
+        <button
+          type="button"
+          onClick={() => setShowCreate(true)}
+          className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-30 w-14 h-14 rounded-full bg-[#E8B923] text-slate-900 shadow-lg flex items-center justify-center hover:brightness-110"
+          aria-label={t('groups.newGroupLabel')}
+          title={t('groups.newGroupLabel')}
+        >
+          <Plus size={28} strokeWidth={2.5} />
+        </button>
+
         {showCreate && (
-          <AppModal open title="Nuevo grupo" onClose={() => setShowCreate(false)}>
+          <AppModal open title={t('groups.newGroupLabel')} onClose={() => setShowCreate(false)}>
             <form onSubmit={handleCreateGroup} className="space-y-4">
-              <ModalField label="Título">
+              <ModalField label={t('groups.titleField')}>
                 <input
                   required
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="Ejemplo: Asado del sábado"
+                  placeholder={t('groups.groupTitlePlaceholder')}
                   className={modalInputClass}
                 />
               </ModalField>
-              <ModalField label="Descripción">
+              <ModalField label={t('groups.descriptionField')}>
                 <textarea
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
-                  placeholder="(Opcional)"
+                  placeholder={t('groups.optional')}
                   className={`${modalInputClass} min-h-[80px] resize-none`}
                 />
               </ModalField>
-              <ModalActions onCancel={() => setShowCreate(false)} submitLabel="Crear" />
+              <ModalActions onCancel={() => setShowCreate(false)} submitLabel={t('groups.createAction')} />
             </form>
           </AppModal>
         )}

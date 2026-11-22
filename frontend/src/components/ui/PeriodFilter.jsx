@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, Filter } from 'lucide-react';
+import { usePreferences } from '../../context/PreferencesContext';
 
-const MONTHS = [
-  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-];
+const MONTHS_ES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+const MONTHS_EN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 function MiniSelect({ value, options, onChange, label }) {
   const [open, setOpen] = useState(false);
@@ -49,15 +48,16 @@ function MiniSelect({ value, options, onChange, label }) {
   );
 }
 
-function MonthYearSelects({ month, year, onChange }) {
+function MonthYearSelects({ month, year, onChange, t, language }) {
   const years = Array.from({ length: 8 }, (_, i) => new Date().getFullYear() - 3 + i);
-  const monthOptions = MONTHS.map((name, i) => ({ value: i + 1, label: name }));
+  const names = language === 'en' ? MONTHS_EN : MONTHS_ES;
+  const monthOptions = names.map((name, i) => ({ value: i + 1, label: name }));
   const yearOptions = years.map((y) => ({ value: y, label: String(y) }));
 
   return (
     <div className="grid grid-cols-2 gap-2">
-      <MiniSelect label="Mes" value={month} options={monthOptions} onChange={(v) => onChange(v, year)} />
-      <MiniSelect label="Año" value={year} options={yearOptions} onChange={(v) => onChange(month, v)} />
+      <MiniSelect label={t('common.month')} value={month} options={monthOptions} onChange={(v) => onChange(v, year)} />
+      <MiniSelect label={t('common.year')} value={year} options={yearOptions} onChange={(v) => onChange(month, v)} />
     </div>
   );
 }
@@ -79,8 +79,10 @@ export default function PeriodFilter({
   defaultStartYear,
   defaultEndMonth,
   defaultEndYear,
-  label = 'Período',
+  label,
 }) {
+  const { t, language } = usePreferences();
+  const resolvedLabel = label || t('common.period');
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -106,8 +108,8 @@ export default function PeriodFilter({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="relative inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-600/60 bg-slate-800/40 text-slate-200 hover:text-amber-300 hover:border-amber-400/40 transition-colors"
-        aria-label={label}
-        title={label}
+        aria-label={resolvedLabel}
+        title={resolvedLabel}
       >
         <Filter size={16} />
         {isFiltered && (
@@ -120,18 +122,18 @@ export default function PeriodFilter({
           {mode === 'range' ? (
             <>
               <div>
-                <p className="text-xs text-slate-400 mb-2 font-medium">Desde</p>
-                <MonthYearSelects month={startMonth} year={startYear} onChange={onChangeStart} />
+                <p className="text-xs text-slate-400 mb-2 font-medium">{t('goals.from')}</p>
+                <MonthYearSelects month={startMonth} year={startYear} onChange={onChangeStart} t={t} language={language} />
               </div>
               <div>
-                <p className="text-xs text-slate-400 mb-2 font-medium">Hasta</p>
-                <MonthYearSelects month={endMonth} year={endYear} onChange={onChangeEnd} />
+                <p className="text-xs text-slate-400 mb-2 font-medium">{t('goals.to')}</p>
+                <MonthYearSelects month={endMonth} year={endYear} onChange={onChangeEnd} t={t} language={language} />
               </div>
             </>
           ) : (
             <div>
-              <p className="text-xs text-slate-400 mb-2 font-medium">{label}</p>
-              <MonthYearSelects month={month} year={year} onChange={onChange} />
+              <p className="text-xs text-slate-400 mb-2 font-medium">{resolvedLabel}</p>
+              <MonthYearSelects month={month} year={year} onChange={onChange} t={t} language={language} />
             </div>
           )}
           <button
@@ -139,7 +141,7 @@ export default function PeriodFilter({
             onClick={() => setOpen(false)}
             className="w-full py-2 rounded-lg bg-amber-400/90 text-slate-900 text-sm font-semibold"
           >
-            Listo
+            {t('common.confirm')}
           </button>
         </div>
       )}

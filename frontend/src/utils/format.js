@@ -1,4 +1,6 @@
-import { getCurrencySymbol, getNumberLocale } from './preferencesStore';
+import { getCurrencyCode, getCurrencySymbol, getNumberLocale } from './preferencesStore';
+import { getUsdArsRate } from './fxStore';
+
 
 /**
  * Interpreta un monto numérico o texto en formatos AR/US.
@@ -33,16 +35,37 @@ export function parseMoney(value) {
 }
 
 export function formatPeso(amount, { decimals = 0 } = {}) {
+  const code = getCurrencyCode();
   const symbol = getCurrencySymbol();
   if (amount == null || amount === '') return `${symbol}0`;
-  const num = parseMoney(amount);
+  let num = parseMoney(amount);
   if (Number.isNaN(num)) return `${symbol}0`;
-  const formatted = Math.abs(num).toLocaleString(getNumberLocale(), {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
+
+  let displaySymbol = symbol;
+  let displayDecimals = decimals;
+  let locale = getNumberLocale();
+
+  if (code === 'USD') {
+    const rate = getUsdArsRate();
+    if (rate) {
+      num = num / rate;
+      displaySymbol = 'US$';
+      displayDecimals = Math.max(decimals, 2);
+      locale = 'en-US';
+    } else {
+      // No rate yet: fall back to ARS to avoid showing wrong numbers.
+      displaySymbol = '$';
+      locale = 'es-AR';
+    }
+  }
+
+  const formatted = Math.abs(num).toLocaleString(locale, {
+    minimumFractionDigits: displayDecimals,
+    maximumFractionDigits: displayDecimals,
   });
-  return `${symbol}${formatted}`;
+  return `${displaySymbol}${formatted}`;
 }
+
 
 export function formatPesoSigned(amount, type) {
   const prefix = type === 'EXPENSE' ? '- ' : type === 'INCOME' ? '+ ' : '';
