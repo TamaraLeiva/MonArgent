@@ -1,0 +1,56 @@
+const DEFAULT_BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
+
+let resolvedBaseUrl = null;
+let resolvePromise = null;
+
+export function resolveApiBaseUrl() {
+  if (resolvedBaseUrl) {
+    return Promise.resolve(resolvedBaseUrl);
+  }
+  if (resolvePromise) {
+    return resolvePromise;
+  }
+
+  resolvePromise = (async () => {
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') {
+      resolvedBaseUrl = '/api/v1';
+      return resolvedBaseUrl;
+    }
+
+    if (import.meta.env.VITE_API_URL) {
+      resolvedBaseUrl = import.meta.env.VITE_API_URL.replace(/\/$/, '');
+      return resolvedBaseUrl;
+    }
+
+    try {
+      const response = await fetch('/app-config.json', { cache: 'no-store' });
+      const contentType = response.headers.get('content-type') || '';
+      if (response.ok && contentType.includes('application/json')) {
+        const config = await response.json();
+        if (config.apiBaseUrl) {
+          resolvedBaseUrl = config.apiBaseUrl.replace(/\/$/, '');
+          return resolvedBaseUrl;
+        }
+      }
+    } catch {
+      // Sin app-config.json: dev local con proxy de Vite.
+    }
+
+    resolvedBaseUrl = DEFAULT_BASE_URL;
+    return resolvedBaseUrl;
+  })();
+
+  return resolvePromise;
+}
+
+export function getApiBaseUrl() {
+  return resolvedBaseUrl || DEFAULT_BASE_URL;
+}
+
+export function usesNgrok(baseUrl = getApiBaseUrl()) {
+  if (baseUrl.includes('ngrok')) {
+    return true;
+  }
+  return false;
+}

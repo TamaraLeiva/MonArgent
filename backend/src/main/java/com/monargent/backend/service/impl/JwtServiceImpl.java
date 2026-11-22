@@ -1,0 +1,122 @@
+package com.monargent.backend.service.impl;
+
+import com.monargent.backend.entity.User;
+import com.monargent.backend.service.JwtService;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
+import javax.crypto.SecretKey;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class JwtServiceImpl implements JwtService {
+
+    @Value("${jwt.secret}")
+    private String secretKey;
+
+    @Value("${jwt.expiration-ms}")
+    private long expirationMs;
+
+    /**
+     * Fail fast on a missing, malformed or weak secret instead of booting with a
+     * predictable key. Generate one with: openssl rand -base64 64
+     */
+    @PostConstruct
+    void validateSecret() {
+        if (secretKey == null || secretKey.isBlank()) {
+            throw new IllegalStateException(
+                "JWT_SECRET is required. Generate one with: openssl rand -base64 64"
+            );
+        }
+
+        byte[] keyBytes;
+        try {
+            keyBytes = Decoders.BASE64.decode(secretKey);
+        } catch (RuntimeException ex) {
+            throw new IllegalStateException(
+                "JWT_SECRET must be standard Base64. Generate one with: openssl rand -base64 64",
+                ex
+            );
+        }
+
+        if (keyBytes.length < 32) {
+            throw new IllegalStateException(
+                "JWT_SECRET must decode to at least 32 bytes (256 bits) for HS256."
+            );
+        }
+    }
+
+    @Override
+    public String generateToken(UserDetails userDetails) {
+        Map<String, Object> claims = new HashMap<>();
+        if (userDetails instanceof User user) {
+            claims.put("ver", user.getTokenVersion());
+        }
+        return generateToken(claims, userDetails);
+    }
+
+    private String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+        long now = System.currentTimeMillis();
+        return Jwts.builder()
+            .claims(extraClaims)
+            .subject(userDetails.getUsername())
+            .issuedAt(new Date(now))
+            .expiration(new Date(now + expirationMs))
+            .signWith(getSigningKey())
+            .compact();
+    }
+
+    @Override
+    public String extractUsername(String token) {
+        return extractClaim(token, Claims::getSubject);
+    }
+
+    @Override
+    public boolean isTokenValid(String token, UserDetails userDetails) {
+        final String username = extractUsername(token);
+        if (!username.equals(userDetails.getUsername()) || isTokenExpired(token)) {
+            return false;
+        }
+        if (userDetails instanceof User user) {
+            Object verClaim = extractAllClaims(token).get("ver");
+            if (!(verClaim instanceof Number verNumber)) {
+                return false;
+            }
+            return verNumber.intValue() == user.getTokenVersion();
+        }
+        return true;
+    }
+
+    private boolean isTokenExpired(String token) {
+        return extractClaim(token, Claims::getExpiration).before(new Date());
+    }
+
+    private <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
+        final Claims claims = extractAllClaims(token);
+        return claimsResolver.apply(claims);
+    }
+
+    private Claims extractAllClaims(String token) {
+        Jws<Claims> claimsJws = Jwts.parser()
+            .verifyWith(getSigningKey())
+            .build()
+            .parseSignedClaims(token);
+        return claimsJws.getPayload();
+    }
+
+    private SecretKey getSigningKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
+}

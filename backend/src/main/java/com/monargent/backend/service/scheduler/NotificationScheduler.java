@@ -1,0 +1,277 @@
+package com.monargent.backend.service.scheduler;
+
+import com.monargent.backend.entity.CalendarEvent;
+import com.monargent.backend.entity.FixedExpense;
+import com.monargent.backend.entity.Group;
+import com.monargent.backend.entity.GroupExpense;
+import com.monargent.backend.entity.GroupGuestMember;
+import com.monargent.backend.entity.SpendingLimit;
+import com.monargent.backend.entity.User;
+import com.monargent.backend.enums.GroupLifecycleStatus;
+import com.monargent.backend.enums.NotificationType;
+import com.monargent.backend.repository.CalendarEventRepository;
+import com.monargent.backend.repository.FixedExpenseRepository;
+import com.monargent.backend.repository.GroupExpenseRepository;
+import com.monargent.backend.repository.GroupGuestMemberRepository;
+import com.monargent.backend.repository.GroupRepository;
+import com.monargent.backend.repository.GroupSettlementPaymentRepository;
+import com.monargent.backend.repository.SpendingLimitRepository;
+import com.monargent.backend.repository.UserRepository;
+import com.monargent.backend.service.NotificationService;
+import com.monargent.backend.service.SpendingLimitAlertHelper;
+import com.monargent.backend.service.group.GroupSettlementCalculator;
+import com.monargent.backend.service.group.GroupSettlementCalculator.Participant;
+import com.monargent.backend.service.group.GroupSettlementCalculator.Transfer;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+@Component
+@RequiredArgsConstructor
+@Slf4j
+public class NotificationScheduler {
+
+    private static final int[] DAY_REMINDERS = {5, 3};
+
+    private final FixedExpenseRepository fixedExpenseRepository;
+    private final CalendarEventRepository calendarEventRepository;
+    private final SpendingLimitRepository spendingLimitRepository;
+    private final GroupRepository groupRepository;
+    private final GroupExpenseRepository groupExpenseRepository;
+    private final GroupGuestMemberRepository groupGuestMemberRepository;
+    private final GroupSettlementPaymentRepository settlementPaymentRepository;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
+    private final SpendingLimitAlertHelper spendingLimitAlertHelper;
+
+    @Value("${app.timezone:America/Argentina/Buenos_Aires}")
+    private String appTimezone;
+
+    private ZoneId zoneId() {
+        return ZoneId.of(appTimezone);
+    }
+
+    private LocalDate appToday() {
+        return LocalDate.now(zoneId());
+    }
+
+    private LocalDateTime appNow() {
+        return LocalDateTime.now(zoneId());
+    }
+
+    @Scheduled(cron = "0 0 9 * * *", zone = "${app.timezone:America/Argentina/Buenos_Aires}")
+    @Transactional
+    public void sendFixedExpenseReminders() {
+        LocalDate today = appToday();
+        for (FixedExpense expense : fixedExpenseRepository.findByActiveTrue()) {
+            for (int daysBefore : DAY_REMINDERS) {
+                if (!isDaysBeforeDue(today, expense.getDueDay(), daysBefore)) {
+                    continue;
+                }
+                User user = expense.getUser();
+                String message = "\"" + expense.getTitle() + "\" vence en " + daysBefore
+                    + " días (día " + expense.getDueDay() + ").";
+                notificationService.createIfNotRecent(
+                    user, NotificationType.REMINDER, message, expense.getId() * 10L + daysBefore, 23
+                );
+            }
+        }
+    }
+
+    @Scheduled(cron = "0 30 9 * * *", zone = "${app.timezone:America/Argentina/Buenos_Aires}")
+    @Transactional
+    public void sendCalendarEventReminders() {
+        LocalDate today = appToday();
+        for (CalendarEvent event : calendarEventRepository.findByActiveTrue()) {
+            for (int daysBefore : DAY_REMINDERS) {
+                if (!isDaysBeforeMonthDay(today, event.getMonth(), event.getDay(), daysBefore)) {
+                    continue;
+                }
+                User user = event.getUser();
+                String message = "En " + daysBefore + " días es el evento " + event.getTitle() + ".";
+                notificationService.createIfNotRecent(
+                    user, NotificationType.REMINDER, message, event.getId() * 10L + daysBefore, 23
+                );
+            }
+        }
+    }
+
+    @Scheduled(cron = "0 0 * * * *", zone = "${app.timezone:America/Argentina/Buenos_Aires}")
+    @Transactional
+    public void sendCalendarEventHourReminders() {
+        LocalDateTime now = appNow();
+        for (CalendarEvent event : calendarEventRepository.findByActiveTrue()) {
+            LocalDate eventDate = nextDueDateInMonth(appToday(), event.getMonth(), event.getDay());
+            int hour = event.getEventHour() != null ? event.getEventHour() : 12;
+            LocalDateTime eventDateTime = eventDate.atTime(hour, 0);
+            long hoursUntil = ChronoUnit.HOURS.between(now, eventDateTime);
+            if (hoursUntil < 11 || hoursUntil > 12) {
+                continue;
+            }
+            User user = event.getUser();
+            String message = "En 12 horas es el evento " + event.getTitle() + ".";
+            notificationService.createIfNotRecent(
+                user, NotificationType.REMINDER, message, event.getId() * 10L + 12, 23
+            );
+        }
+    }
+
+    @Scheduled(cron = "0 0 8 * * *", zone = "${app.timezone:America/Argentina/Buenos_Aires}")
+    @Transactional
+    public void sendSpendingLimitAlerts() {
+        for (SpendingLimit limit : spendingLimitRepository.findAll()) {
+            spendingLimitAlertHelper.notifyHighestIfDue(limit);
+        }
+    }
+
+    @Scheduled(cron = "0 0 * * * *", zone = "${app.timezone:America/Argentina/Buenos_Aires}")
+    @Transactional
+    public void sendGroupDebtReminders() {
+        for (User user : userRepository.findAll()) {
+            String memberKey = "user-" + user.getId();
+            List<Group> groups = groupRepository.findAllByMemberId(user.getId());
+            for (Group group : groups) {
+                if (group.getLifecycleStatus() != GroupLifecycleStatus.SETTLEMENT) {
+                    continue;
+                }
+                Set<String> paidKeys = loadPaidKeys(group.getId());
+                for (Transfer transfer : computeTransfers(group)) {
+                    if (!memberKey.equals(transfer.getFromMemberKey())) {
+                        continue;
+                    }
+                    String key = settlementKey(transfer.getFromMemberKey(), transfer.getToMemberKey());
+                    if (paidKeys.contains(key)) {
+                        continue;
+                    }
+                    String message = "Recordatorio: debés " + formatMoney(transfer.getAmount())
+                        + " a " + transfer.getToNick() + " en \"" + group.getTitle() + "\".";
+                    notificationService.createIfNotRecent(
+                        user, NotificationType.PAYMENT, message, null, 24
+                    );
+                }
+            }
+        }
+    }
+
+    private boolean isDaysBeforeDue(LocalDate today, int dueDay, int daysBefore) {
+        LocalDate due = nextDueDate(today, dueDay);
+        return due.minusDays(daysBefore).equals(today);
+    }
+
+    private boolean isDaysBeforeMonthDay(LocalDate today, int month, int day, int daysBefore) {
+        LocalDate due = nextDueDateInMonth(today, month, day);
+        return due.minusDays(daysBefore).equals(today);
+    }
+
+    private LocalDate nextDueDateInMonth(LocalDate from, int month, int day) {
+        YearMonth ym = YearMonth.of(from.getYear(), month);
+        int clampedDay = Math.min(day, ym.lengthOfMonth());
+        LocalDate candidate = LocalDate.of(from.getYear(), month, clampedDay);
+        if (!candidate.isBefore(from)) {
+            return candidate;
+        }
+        YearMonth nextYear = YearMonth.of(from.getYear() + 1, month);
+        return nextYear.atDay(Math.min(day, nextYear.lengthOfMonth()));
+    }
+
+    private LocalDate nextDueDate(LocalDate from, int dueDay) {
+        YearMonth ym = YearMonth.from(from);
+        int day = Math.min(dueDay, ym.lengthOfMonth());
+        LocalDate candidate = from.withDayOfMonth(day);
+        if (!candidate.isBefore(from)) {
+            return candidate;
+        }
+        YearMonth next = ym.plusMonths(1);
+        return next.atDay(Math.min(dueDay, next.lengthOfMonth()));
+    }
+
+    private Set<String> loadPaidKeys(Long groupId) {
+        Set<String> keys = new HashSet<>();
+        settlementPaymentRepository.findAllByGroupId(groupId).forEach(payment ->
+            keys.add(settlementKey(payment.getFromMemberKey(), payment.getToMemberKey()))
+        );
+        return keys;
+    }
+
+    private List<Transfer> computeTransfers(Group group) {
+        List<GroupGuestMember> guests = groupGuestMemberRepository.findAllByGroupId(group.getId());
+        List<GroupExpense> expenses = groupExpenseRepository.findAllByGroupId(group.getId());
+
+        Map<String, BigDecimal> spentByMember = new HashMap<>();
+        for (GroupExpense expense : expenses) {
+            String key = resolveExpenseMemberKey(expense);
+            if (key != null) {
+                spentByMember.merge(key, expense.getAmount(), BigDecimal::add);
+            }
+        }
+
+        List<Participant> participants = new ArrayList<>();
+        for (User member : group.getMembers()) {
+            String key = "user-" + member.getId();
+            participants.add(Participant.builder()
+                .memberKey(key)
+                .nick(resolveUserNick(member))
+                .mpAlias(member.getMpAlias())
+                .paid(spentByMember.getOrDefault(key, BigDecimal.ZERO))
+                .currentUser(false)
+                .build());
+        }
+        for (GroupGuestMember guest : guests) {
+            String key = "guest-" + guest.getId();
+            participants.add(Participant.builder()
+                .memberKey(key)
+                .nick(guest.getMpAlias())
+                .mpAlias(guest.getMpAlias())
+                .paid(spentByMember.getOrDefault(key, BigDecimal.ZERO))
+                .currentUser(false)
+                .build());
+        }
+
+        return GroupSettlementCalculator.compute(participants);
+    }
+
+    private String resolveExpenseMemberKey(GroupExpense expense) {
+        if (expense.getPaidBy() != null) {
+            return "user-" + expense.getPaidBy().getId();
+        }
+        if (expense.getPaidByGuest() != null) {
+            return "guest-" + expense.getPaidByGuest().getId();
+        }
+        return null;
+    }
+
+    private String resolveUserNick(User user) {
+        if (user.getMpAlias() != null && !user.getMpAlias().isBlank()) {
+            return user.getMpAlias().trim();
+        }
+        String source = user.getName() != null && !user.getName().isBlank()
+            ? user.getName()
+            : user.getEmail().split("@")[0];
+        return source.trim().toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "_");
+    }
+
+    private String settlementKey(String from, String to) {
+        return from + "->" + to;
+    }
+
+    private String formatMoney(BigDecimal amount) {
+        return "$" + amount.setScale(0, RoundingMode.HALF_UP).toPlainString();
+    }
+}
