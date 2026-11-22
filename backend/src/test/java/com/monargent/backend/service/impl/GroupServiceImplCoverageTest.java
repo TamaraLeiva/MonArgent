@@ -411,8 +411,8 @@ class GroupServiceImplCoverageTest {
         when(settlementPaymentRepository.findByGroupIdAndFromMemberKeyAndToMemberKey(10L, "user-1", "user-2"))
             .thenReturn(Optional.empty());
         when(settlementProofStorageService.store(any(), eq(10L), eq("user-1"), eq("user-2")))
-            .thenReturn("stored.png");
-        when(settlementPaymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            .thenReturn(new SettlementProofStorageService.StoredProof("stored.png", "image/png"));
+        when(settlementPaymentRepository.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
         when(userRepository.findById(2L)).thenReturn(Optional.of(bob));
 
         MockMultipartFile file = new MockMultipartFile("f", "p.png", "image/png", new byte[]{1});

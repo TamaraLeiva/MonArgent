@@ -60,6 +60,8 @@ class NotificationSchedulerTest {
 
     @BeforeEach
     void setUp() {
+        org.springframework.test.util.ReflectionTestUtils.setField(
+            scheduler, "appTimezone", java.time.ZoneId.systemDefault().getId());
         user = User.builder().id(1L).name("Ana").lastname("Perez")
             .email("ana@example.com").password("x").verified(true).build();
     }

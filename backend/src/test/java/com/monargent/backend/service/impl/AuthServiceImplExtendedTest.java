@@ -233,11 +233,14 @@ class AuthServiceImplExtendedTest {
     }
 
     @Test
-    void requestPasswordReset_unknownUser_throws() {
+    void requestPasswordReset_unknownUser_returnsGenericMessage() {
         when(userRepository.existsByEmailIgnoreCase("x@example.com")).thenReturn(false);
-        assertThatThrownBy(() -> authService.requestPasswordReset(
-            ForgotPasswordRequest.builder().email("x@example.com").build()))
-            .isInstanceOf(UserNotFoundException.class);
+        AuthResponse response = authService.requestPasswordReset(
+            ForgotPasswordRequest.builder().email("x@example.com").build());
+
+        assertThat(response.getMessage()).isEqualTo("Si el correo está registrado, te enviamos un código de recuperación.");
+        verify(authEmailService, never()).sendAuthCodeEmail(anyString(), anyString(), any(), anyInt());
+        verify(verificationCodeRepository, never()).save(any());
     }
 
     @Test

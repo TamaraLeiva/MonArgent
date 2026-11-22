@@ -85,4 +85,47 @@ class JwtServiceImplTest {
             .isInstanceOf(IllegalStateException.class)
             .hasMessageContaining("Base64");
     }
+
+    @Test
+    void isTokenValid_rejectsMissingVersionClaim() {
+        JwtServiceImpl legacyService = new JwtServiceImpl();
+        ReflectionTestUtils.setField(legacyService, "secretKey", SECRET);
+        ReflectionTestUtils.setField(legacyService, "expirationMs", 86_400_000L);
+
+        String legacyToken = io.jsonwebtoken.Jwts.builder()
+            .subject("jwt-roundtrip@example.com")
+            .issuedAt(new java.util.Date())
+            .expiration(new java.util.Date(System.currentTimeMillis() + 86_400_000L))
+            .signWith(io.jsonwebtoken.security.Keys.hmacShaKeyFor(io.jsonwebtoken.io.Decoders.BASE64.decode(SECRET)))
+            .compact();
+
+        User user = User.builder()
+            .id(1L)
+            .name("Mon")
+            .lastname("Argent")
+            .email("jwt-roundtrip@example.com")
+            .password("encoded")
+            .verified(true)
+            .build();
+
+        assertThat(jwtService.isTokenValid(legacyToken, user)).isFalse();
+    }
+
+    @Test
+    void isTokenValid_rejectsOldTokenVersion() {
+        User user = User.builder()
+            .id(1L)
+            .name("Mon")
+            .lastname("Argent")
+            .email("jwt-roundtrip@example.com")
+            .password("encoded")
+            .verified(true)
+            .tokenVersion(0)
+            .build();
+
+        String token = jwtService.generateToken(user);
+        user.setTokenVersion(1);
+
+        assertThat(jwtService.isTokenValid(token, user)).isFalse();
+    }
 }

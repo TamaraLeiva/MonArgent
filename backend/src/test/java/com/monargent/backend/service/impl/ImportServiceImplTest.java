@@ -27,10 +27,13 @@ import com.monargent.backend.service.CurrentUserService;
 import com.monargent.backend.service.FinancialExtractionAIService;
 import com.monargent.backend.service.OCRSpaceService;
 import com.monargent.backend.service.TransactionService;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import javax.imageio.ImageIO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,10 +66,10 @@ class ImportServiceImplTest {
     }
 
     @Test
-    void extract_imagePath_enrichesSuggestedCategory() {
+    void extract_imagePath_enrichesSuggestedCategory() throws Exception {
         when(currentUserService.getCurrentUserId()).thenReturn(1L);
         MockMultipartFile file = new MockMultipartFile(
-            "file", "ticket.jpg", "image/jpeg", new byte[]{1, 2, 3});
+            "file", "ticket.jpg", "image/jpeg", validJpegBytes());
         when(ocrSpaceService.extractRawText(file)).thenReturn("SUPERMERCADO TOTAL 100");
         ExtractedMovementDTO movement = ExtractedMovementDTO.builder()
             .description("Leche").amount(new BigDecimal("10"))
@@ -81,9 +84,9 @@ class ImportServiceImplTest {
     }
 
     @Test
-    void extract_blankOcr_throws() {
+    void extract_blankOcr_throws() throws Exception {
         MockMultipartFile file = new MockMultipartFile(
-            "file", "ticket.png", "image/png", new byte[]{1});
+            "file", "ticket.png", "image/png", validPngBytes());
         when(ocrSpaceService.extractRawText(file)).thenReturn("  ");
         assertThatThrownBy(() -> service.extract(file))
             .isInstanceOf(InvalidRequestException.class)
@@ -93,7 +96,7 @@ class ImportServiceImplTest {
     @Test
     void extract_noMovements_throws() {
         MockMultipartFile file = new MockMultipartFile(
-            "file", "ticket.pdf", "application/pdf", new byte[]{1});
+            "file", "ticket.pdf", "application/pdf", validPdfBytes());
         when(ocrSpaceService.extractRawText(file)).thenReturn("texto sin items");
         when(financialExtractionAIService.extractMovements(any())).thenReturn(List.of());
         assertThatThrownBy(() -> service.extract(file))
@@ -102,10 +105,10 @@ class ImportServiceImplTest {
     }
 
     @Test
-    void extract_trimsLongOcrText() {
+    void extract_trimsLongOcrText() throws Exception {
         when(currentUserService.getCurrentUserId()).thenReturn(1L);
         MockMultipartFile file = new MockMultipartFile(
-            "file", "ticket.jpg", "image/jpeg", new byte[]{1});
+            "file", "ticket.jpg", "image/jpeg", validJpegBytes());
         String longText = "x".repeat(13_000);
         when(ocrSpaceService.extractRawText(file)).thenReturn(longText);
         when(financialExtractionAIService.extractMovements(any())).thenAnswer(inv -> {
@@ -206,5 +209,24 @@ class ImportServiceImplTest {
         assertThatThrownBy(() -> service.confirm(ImportConfirmRequest.builder().movements(List.of(item)).build()))
             .isInstanceOf(ResourceNotFoundException.class)
             .hasMessage("Categoría no encontrada");
+    }
+
+    private static byte[] validJpegBytes() throws Exception {
+        BufferedImage image = new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ImageIO.write(image, "jpg", out);
+        return out.toByteArray();
+    }
+
+    private static byte[] validPngBytes() throws Exception {
+        BufferedImage image = new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ImageIO.write(image, "png", out);
+        return out.toByteArray();
+    }
+
+    private static byte[] validPdfBytes() {
+        String pdf = "%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n";
+        return pdf.getBytes(java.nio.charset.StandardCharsets.US_ASCII);
     }
 }

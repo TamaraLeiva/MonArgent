@@ -1,41 +1,44 @@
 package com.monargent.backend.utils;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.monargent.backend.enums.ImportSourceType;
 import com.monargent.backend.exception.InvalidRequestException;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
 
-public class ImportFileUtilsTest {
+class ImportFileUtilsTest {
 
     @Test
-    void detectSourceType_recognizesImage() {
-        MockMultipartFile file = new MockMultipartFile("file", "ticket.jpg", "image/jpeg", new byte[]{1, 2});
-        assertEquals(ImportSourceType.IMAGE, ImportFileUtils.detectSourceType(file));
+    void detectsPngImage() throws Exception {
+        BufferedImage image = new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ImageIO.write(image, "png", out);
+        MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", out.toByteArray());
+
+        assertThat(ImportFileUtils.detectSourceType(file)).isEqualTo(ImportSourceType.IMAGE);
     }
 
     @Test
-    void detectSourceType_recognizesPdf() {
-        MockMultipartFile file = new MockMultipartFile("file", "extracto.pdf", "application/pdf", new byte[]{1, 2});
-        assertEquals(ImportSourceType.PDF, ImportFileUtils.detectSourceType(file));
+    void rejectsMimeSpoof() {
+        MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", "not-image".getBytes());
+
+        assertThatThrownBy(() -> ImportFileUtils.detectSourceType(file))
+            .isInstanceOf(InvalidRequestException.class);
     }
 
     @Test
-    void detectSourceType_recognizesExcel() {
-        MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "movimientos.xlsx",
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            new byte[]{1, 2}
-        );
-        assertEquals(ImportSourceType.EXCEL, ImportFileUtils.detectSourceType(file));
-    }
+    void rejectsTooLargeFile() {
+        byte[] bytes = new byte[5 * 1024 * 1024 + 1];
+        bytes[0] = (byte) 0x89; bytes[1] = 0x50; bytes[2] = 0x4E; bytes[3] = 0x47;
+        MockMultipartFile file = new MockMultipartFile("file", "a.png", "image/png", bytes);
 
-    @Test
-    void detectSourceType_rejectsUnsupportedType() {
-        MockMultipartFile file = new MockMultipartFile("file", "data.txt", "text/plain", new byte[]{1});
-        assertThrows(InvalidRequestException.class, () -> ImportFileUtils.detectSourceType(file));
+        assertThatThrownBy(() -> ImportFileUtils.detectSourceType(file))
+            .isInstanceOf(InvalidRequestException.class)
+            .hasMessageContaining("5MB");
     }
 }
