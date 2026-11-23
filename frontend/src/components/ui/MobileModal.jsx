@@ -31,15 +31,15 @@ export default function MobileModal({ open, onClose, children, zIndex = 'z-50', 
     return null;
   }
 
-  const alignClass = align === 'end' ? 'items-end' : 'items-center';
+  const alignClass = align === 'end' ? 'items-end sm:items-center' : 'items-center';
 
   return (
     <div
-      className={`fixed inset-0 bg-black/60 backdrop-blur-sm flex ${alignClass} sm:items-center justify-center ${zIndex} p-4 overflow-y-auto`}
+      className={`fixed inset-x-0 top-0 bottom-0 bg-black/60 backdrop-blur-sm flex ${alignClass} justify-center ${zIndex} p-4 pb-24 sm:pb-4 overflow-y-auto`}
       style={{ paddingBottom: keyboardOffset ? `${keyboardOffset + 16}px` : undefined }}
       onClick={(e) => e.target === e.currentTarget && onClose?.()}
     >
-      <div className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-md my-auto" onClick={(e) => e.stopPropagation()}>
         {children}
       </div>
     </div>

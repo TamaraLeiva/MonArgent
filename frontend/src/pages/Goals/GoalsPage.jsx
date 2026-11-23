@@ -30,8 +30,7 @@ import {
 } from '../../utils/currency';
 
 import AppModal, { ModalActions, ModalField, modalInputClass } from '../../components/ui/AppModal';
-import HelpTip from '../../components/ui/HelpTip';
-import { HELP } from '../../content/helpContent';
+
 
 const GOAL_ICONS = [
   { key: 'plane', label: 'Viaje', Icon: Plane },
@@ -342,11 +341,6 @@ export default function GoalsPage() {
   return (
     <Layout>
       <div className="text-white max-w-4xl mx-auto">
-        {/* Header — sin título duplicado en objetivos (está en layout) */}
-        <div className="flex items-center justify-between gap-3 mb-5">
-          <HelpTip title={HELP.goals.title} body={HELP.goals.body} align="left" />
-        </div>
-
         {/* Stats inline */}
         {!loading && goals.length > 0 && (
           <p className="text-item-meta mb-4 -mt-2">

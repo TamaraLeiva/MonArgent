@@ -9,7 +9,7 @@ public class EmailSendException extends ApiException {
     }
 
     public EmailSendException(String message, Throwable cause) {
-        super(message + ": " + (cause == null ? "" : cause.getMessage()), HttpStatus.BAD_GATEWAY);
+        super(message, HttpStatus.BAD_GATEWAY);
         initCause(cause);
     }
 }

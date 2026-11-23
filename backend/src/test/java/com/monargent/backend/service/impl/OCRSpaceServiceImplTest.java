@@ -63,7 +63,7 @@ class OCRSpaceServiceImplTest {
             .thenReturn(ResponseEntity.ok(null));
         assertThatThrownBy(() -> service.extractRawText(pdf))
             .isInstanceOf(RuntimeException.class)
-            .hasMessageContaining("Respuesta nula");
+            .hasMessageContaining("no respondió");
     }
 
     @Test
@@ -75,7 +75,7 @@ class OCRSpaceServiceImplTest {
             .thenReturn(ResponseEntity.ok(error));
         assertThatThrownBy(() -> service.extractRawText(file))
             .isInstanceOf(RuntimeException.class)
-            .hasMessageContaining("Error del servicio OCR");
+            .hasMessageContaining("No se pudo leer el ticket");
 
         OCRSpaceResponse empty = new OCRSpaceResponse();
         empty.setParsedResults(List.of());

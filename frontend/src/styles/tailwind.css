@@ -173,6 +173,7 @@
 .light .bg-\[\#081b33\],
 .light .bg-\[\#081b33\]\/95,
 .light .bg-\[\#0f2543\],
+.light .bg-\[\#071427\],
 .light .bg-\[\#071b34\],
 .light .bg-\[\#06162b\],
 .light .bg-\[\#0B1528\],
@@ -186,7 +187,12 @@
 .light .bg-\[\#132a4a\]\/40,
 .light .bg-\[\#173459\],
 .light .bg-\[\#2d4667\],
-.light .bg-\[\#162238\] { background-color: #ffffff !important; }
+.light .bg-\[\#162238\],
+.light .bg-\[\#080f1a\],
+.light .bg-\[\#0c1a2e\],
+.light .bg-\[\#0c1a2e\]\/90,
+.light .bg-\[\#0c1a2e\]\/80,
+.light .bg-\[\#0a1525\] { background-color: #ffffff !important; }
 
 
 
@@ -206,6 +212,8 @@
 .light .border-\[\#274466\],
 .light .border-\[\#203d60\],
 .light .border-\[\#2b4b72\],
+.light .border-\[\#1e3352\]\/80,
+.light .border-\[\#243a5c\],
 .light .border-slate-700\/60 { border-color: #d7e1ec !important; }
 
 
@@ -268,4 +276,35 @@
 .light .text-item-meta { color: #5f718a !important; }
 .light .text-item-caption,
 .light .text-label-caps { color: #74859c !important; }
+
+/* Light mode legibility: intensify pale text colors on white backgrounds */
+.light .text-yellow-200,
+.light .text-yellow-300,
+.light .text-yellow-400,
+.light .text-amber-200,
+.light .text-amber-300 { color: #b45309 !important; }
+.light .text-amber-400,
+.light .text-yellow-500 { color: #92400e !important; }
+.light .text-cyan-200,
+.light .text-cyan-300,
+.light .text-cyan-400,
+.light .text-sky-200,
+.light .text-sky-300,
+.light .text-sky-400 { color: #0369a1 !important; }
+.light .text-teal-200,
+.light .text-teal-300,
+.light .text-teal-400 { color: #0f766e !important; }
+.light .text-emerald-200,
+.light .text-emerald-300,
+.light .text-emerald-400 { color: #047857 !important; }
+.light .text-red-200,
+.light .text-red-300 { color: #b91c1c !important; }
+.light .text-green-200,
+.light .text-green-300 { color: #15803d !important; }
+.light .text-blue-200,
+.light .text-blue-300 { color: #1d4ed8 !important; }
+.light .text-indigo-200,
+.light .text-indigo-300 { color: #4338ca !important; }
+.light .text-purple-200,
+.light .text-purple-300 { color: #7e22ce !important; }
 

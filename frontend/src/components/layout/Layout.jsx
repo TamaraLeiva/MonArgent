@@ -235,7 +235,7 @@ const Layout = ({ children }) => {
       {/* Main area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="md:h-16 flex-shrink-0 flex flex-col md:flex-row md:items-center justify-between px-4 md:px-6 bg-[#081b33] border-b border-[#234063]/50 gap-3 py-2 md:py-0">
+        <header className="md:h-auto flex-shrink-0 flex flex-col justify-center px-4 md:px-6 bg-[#081b33] border-b border-[#234063]/50 gap-2 py-2 md:py-3">
           <div className="w-full flex items-center justify-between gap-3 min-w-0">
             <div className="min-w-0 flex-1">
               {isDashboard ? (
@@ -266,12 +266,42 @@ const Layout = ({ children }) => {
                   {location.pathname.startsWith('/transactions') && (
                     <HelpTip title={HELP.transactions.title} body={HELP.transactions.body} align="left" />
                   )}
+                  {location.pathname === '/scan' && (
+                    <HelpTip title={HELP.scan.title} body={HELP.scan.body} align="left" />
+                  )}
+                  {location.pathname === '/goals' && (
+                    <HelpTip title={HELP.goals.title} body={HELP.goals.body} align="left" />
+                  )}
+                  {location.pathname === '/recommendations' && (
+                    <HelpTip title={HELP.recommendations.title} body={HELP.recommendations.body} align="left" />
+                  )}
+                  {location.pathname === '/calendar' && (
+                    <HelpTip title={HELP.calendar.title} body={HELP.calendar.body} align="left" />
+                  )}
                 </div>
               )}
             </div>
 
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              <div className="hidden md:flex items-center gap-1.5 sm:gap-2">
+              <ProfileMoodFace />
+              <NotificationBell />
+              <UserMenu initials={getInitials()} email={user?.email || ''} onLogout={logout} />
+            </div>
+          </div>
+
+            <div className="w-full flex items-center justify-between gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                className="inline-flex items-center gap-1.5 h-9 px-2 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-white/5 transition-colors"
+                aria-label={t('layout.back')}
+                title={t('layout.back')}
+              >
+                <ArrowLeft size={18} />
+                <span className="text-xs font-medium hidden sm:inline">{t('layout.back')}</span>
+              </button>
+
+              <div className="flex items-center justify-center gap-1.5 sm:gap-2 ml-auto">
                 <button
                   type="button"
                   onClick={toggleLanguage}
@@ -281,27 +311,25 @@ const Layout = ({ children }) => {
                 >
                   {language === 'es' ? 'ES' : 'EN'}
                 </button>
-                <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={toggleCurrency}
+                  className="min-w-[44px] h-9 px-2 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-amber-300 hover:bg-white/5 transition-colors"
+                  title={currency === 'ARS' ? t('currency.dollar') : t('currency.peso')}
+                  aria-label={currency === 'ARS' ? t('currency.dollar') : t('currency.peso')}
+                >
+                  {currency === 'ARS' ? '$' : 'US$'}
+                </button>
+                {currency === 'USD' && (
                   <button
                     type="button"
-                    onClick={toggleCurrency}
-                    className="min-w-[44px] h-9 px-2 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-amber-300 hover:bg-white/5 transition-colors"
-                    title={currency === 'ARS' ? t('currency.dollar') : t('currency.peso')}
-                    aria-label={currency === 'ARS' ? t('currency.dollar') : t('currency.peso')}
+                    onClick={() => refreshFxRate()}
+                    className="inline-flex items-center h-9 px-2 rounded-lg text-[10px] text-slate-400 hover:text-amber-300 hover:bg-white/5 transition-colors whitespace-nowrap max-w-[140px] sm:max-w-none"
+                    title={fx?.error ? 'Sin cotización, mostrando ARS. Click para reintentar.' : `Cotización oficial DolarAPI${fx?.updatedAt ? ` · ${new Date(fx.updatedAt).toLocaleString('es-AR')}` : ''}. Click para actualizar.`}
                   >
-                    {currency === 'ARS' ? '$' : 'US$'}
+                    {fx?.loading ? 'Cotizando...' : fx?.rate ? `US$1=$${Math.round(fx.rate).toLocaleString('es-AR')}` : 'Sin cotización'}
                   </button>
-                  {currency === 'USD' && (
-                    <button
-                      type="button"
-                      onClick={() => refreshFxRate()}
-                      className="inline-flex items-center h-9 px-2 rounded-lg text-[10px] text-slate-400 hover:text-amber-300 hover:bg-white/5 transition-colors whitespace-nowrap max-w-[140px] sm:max-w-none"
-                      title={fx?.error ? 'Sin cotización, mostrando ARS. Click para reintentar.' : `Cotización oficial DolarAPI${fx?.updatedAt ? ` · ${new Date(fx.updatedAt).toLocaleString('es-AR')}` : ''}. Click para actualizar.`}
-                    >
-                      {fx?.loading ? 'Cotizando...' : fx?.rate ? `US$1=$${Math.round(fx.rate).toLocaleString('es-AR')}` : 'Sin cotización'}
-                    </button>
-                  )}
-                </div>
+                )}
                 <button
                   type="button"
                   onClick={toggleTheme}
@@ -312,52 +340,7 @@ const Layout = ({ children }) => {
                   {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
                 </button>
               </div>
-              <ProfileMoodFace />
-              <NotificationBell />
-              <UserMenu initials={getInitials()} email={user?.email || ''} onLogout={logout} />
             </div>
-          </div>
-
-          <div className="md:hidden w-full flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              onClick={toggleLanguage}
-              className="min-w-[40px] h-9 px-2 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-amber-300 hover:bg-white/5 transition-colors"
-              title={language === 'es' ? 'Switch to English' : 'Cambiar a Español'}
-              aria-label={language === 'es' ? 'Switch to English' : 'Cambiar a Español'}
-            >
-              {language === 'es' ? 'ES' : 'EN'}
-            </button>
-            <button
-              type="button"
-              onClick={toggleCurrency}
-              className="min-w-[44px] h-9 px-2 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-amber-300 hover:bg-white/5 transition-colors"
-              title={currency === 'ARS' ? t('currency.dollar') : t('currency.peso')}
-              aria-label={currency === 'ARS' ? t('currency.dollar') : t('currency.peso')}
-            >
-              {currency === 'ARS' ? '$' : 'US$'}
-            </button>
-            {currency === 'USD' && (
-              <button
-                type="button"
-                onClick={() => refreshFxRate()}
-                className="inline-flex items-center h-9 px-2 rounded-lg text-[10px] text-slate-400 hover:text-amber-300 hover:bg-white/5 transition-colors whitespace-nowrap"
-                title={fx?.error ? 'Sin cotización, mostrando ARS. Click para reintentar.' : `Cotización oficial DolarAPI${fx?.updatedAt ? ` · ${new Date(fx.updatedAt).toLocaleString('es-AR')}` : ''}. Click para actualizar.`}
-              >
-                {fx?.loading ? 'Cotizando...' : fx?.rate ? `US$1=$${Math.round(fx.rate).toLocaleString('es-AR')}` : 'Sin cotización'}
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-300 hover:text-amber-300 hover:bg-white/5 transition-colors"
-              title={theme === 'dark' ? t('theme.light') : t('theme.dark')}
-              aria-label={theme === 'dark' ? t('theme.light') : t('theme.dark')}
-            >
-              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-          </div>
-
         </header>
 
         {/* Content */}
@@ -369,15 +352,7 @@ const Layout = ({ children }) => {
           }}
         >
           {children}
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className={`fixed bottom-24 left-4 md:bottom-6 z-30 p-2 text-blue-600 dark:text-white hover:text-amber-500 dark:hover:text-amber-300 transition-colors ${expanded ? 'md:left-60' : 'md:left-20'}`}
-            aria-label={t('layout.back')}
-            title={t('layout.back')}
-          >
-            <ArrowLeft size={24} />
-          </button>
+
         </main>
 
         {/* Mobile Bottom Navigation */}
@@ -396,8 +371,7 @@ const Layout = ({ children }) => {
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
-                  <Icon size={18} />
-                  <span className="text-[10px] leading-none">{label}</span>
+                  <Icon size={20} />
                   <span className={`h-1 w-1 rounded-full ${active ? 'bg-amber-400' : 'bg-transparent'}`} />
                 </button>
               );

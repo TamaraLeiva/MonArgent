@@ -1,7 +1,9 @@
 import React, { useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { Moon, Sun } from 'lucide-react';
 import BrandLogo from '../brand/BrandLogo';
 import useKeyboardOffset from '../../hooks/useKeyboardOffset';
+import { usePreferences } from '../../context/PreferencesContext';
 
 const AuthLayout = ({
   title,
@@ -15,6 +17,7 @@ const AuthLayout = ({
   icon,
 }) => {
   const keyboardOffset = useKeyboardOffset(true);
+  const { theme, language, toggleTheme, toggleLanguage, t } = usePreferences();
 
   const scrollInputIntoView = useCallback((event) => {
     const target = event.target;
@@ -36,6 +39,27 @@ const AuthLayout = ({
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[500px] h-[320px] bg-amber-500/[0.05] rounded-full blur-[100px]" />
         <div className="absolute bottom-0 inset-x-0 h-40 bg-gradient-to-t from-[#080f1a] to-transparent" />
+      </div>
+
+      <div className="fixed top-4 right-4 z-20 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={toggleLanguage}
+          className="min-w-[40px] h-9 px-2 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-amber-300 bg-[#0c1a2e]/80 border border-[#243a5c] backdrop-blur-sm transition-colors"
+          title={language === 'es' ? 'Switch to English' : 'Cambiar a Español'}
+          aria-label={language === 'es' ? 'Switch to English' : 'Cambiar a Español'}
+        >
+          {language === 'es' ? 'ES' : 'EN'}
+        </button>
+        <button
+          type="button"
+          onClick={toggleTheme}
+          className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-300 hover:text-amber-300 bg-[#0c1a2e]/80 border border-[#243a5c] backdrop-blur-sm transition-colors"
+          title={theme === 'dark' ? t('theme.light') : t('theme.dark')}
+          aria-label={theme === 'dark' ? t('theme.light') : t('theme.dark')}
+        >
+          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
       </div>
 
       <div className="relative z-10 w-full max-w-[420px] flex flex-col pt-[env(safe-area-inset-top,0px)]">

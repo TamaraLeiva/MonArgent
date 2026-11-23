@@ -135,10 +135,13 @@ public class RecommendationServiceImpl implements RecommendationService {
         String systemPrompt = """
             Sos un asesor financiero personal argentino. Generá exactamente 3 recomendaciones en español rioplatense.
             Cada línea debe empezar con el tipo entre corchetes: [SAVINGS], [SPENDING], [GOAL], [ALERT] o [GENERAL].
+            Formato de números: usá punto para miles y coma para decimales (ej: $15.000, $1.250,50). Nunca escribas números sin separadores.
+            Cuando sugieras un cambio, indicá el porcentaje y el monto entre paréntesis con signo (ej: reducir un 20% (-$3.000), sumar (+$3.000)).
             Usá montos concretos en pesos ($) basados en los datos del usuario.
             Si hay objetivos de ahorro, incluí al menos una recomendación que diga cuánto podría sumar al objetivo
-            si reduce un gasto específico (ej: "Si reducís Uber de $8000 a $5000 podés sumar $3000 a tu objetivo Viajar a Brasil").
+            si reduce un gasto específico (ej: "Si reducís Uber de $8.000 a $5.000 (-20%, -$3.000), podés sumar +$3.000 a tu objetivo \"Viajar a Brasil\"").
             Si hay límites cerca del 50%, 75% o 100%, mencionalo en una alerta.
+            No inventes gastos fijos ni gastos grupales si no aparecen en los datos.
             Sin numeración ni viñetas extra. Una recomendación por línea.
             """;
 
@@ -194,11 +197,11 @@ public class RecommendationServiceImpl implements RecommendationService {
                 SavingGoal goal = goals.isEmpty() ? null : goals.get(0);
                 String msg = goal != null
                     ? "Si reducís " + top.getKey() + " de $" + formatMoney(total)
-                        + " a $" + formatMoney(suggested)
-                        + " podés sumar $" + formatMoney(reduction)
-                        + " a tu objetivo \"" + goal.getTitle() + "\"."
+                        + " a $" + formatMoney(suggested) + " (-20%, -$" + formatMoney(reduction) + ")"
+                        + ", podés sumar +$" + formatMoney(reduction)
+                        + " a tu objetivo "" + goal.getTitle() + ""."
                     : "Tu mayor gasto es " + top.getKey() + " ($" + formatMoney(total)
-                        + "). Reducirlo un 20% te liberaría $" + formatMoney(reduction) + " al mes.";
+                        + "). Si lo reducís un 20% (-$" + formatMoney(reduction) + "), te liberarías ese monto al mes.";
                 result.add(saveRecommendation(user, RecommendationType.GOAL, msg, reduction));
             });
 
@@ -206,7 +209,7 @@ public class RecommendationServiceImpl implements RecommendationService {
             result.add(saveRecommendation(
                 user,
                 RecommendationType.GENERAL,
-                "Revisá tus gastos fijos y buscá una suscripción o servicio que puedas pausar este mes.",
+                "Revisá tus gastos del mes y buscá algún consumo que puedas reducir o posponer.",
                 null
             ));
         }
@@ -270,7 +273,8 @@ public class RecommendationServiceImpl implements RecommendationService {
         if (amount == null) {
             return "0";
         }
-        return amount.setScale(0, RoundingMode.HALF_UP).toPlainString();
+        BigDecimal value = amount.setScale(0, RoundingMode.HALF_UP);
+        return String.format(java.util.Locale.forLanguageTag("es-AR"), "%,.0f", value);
     }
 
     private RecommendationResponse toResponse(Recommendation r) {

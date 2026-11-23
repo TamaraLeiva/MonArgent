@@ -1,5 +1,6 @@
 package com.monargent.backend.service.impl;
 import com.monargent.backend.dto.ocr.OCRSpaceResponse;
+import com.monargent.backend.exception.InvalidRequestException;
 import com.monargent.backend.service.OCRSpaceService;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -60,11 +61,11 @@ public class OCRSpaceServiceImpl implements OCRSpaceService {
             ResponseEntity<OCRSpaceResponse> response = restTemplate.postForEntity(ocrUrl, requestEntity, OCRSpaceResponse.class);
             OCRSpaceResponse ocrResponse = response.getBody();
             if (ocrResponse == null) {
-                throw new RuntimeException("Respuesta nula del servicio OCR");
+                throw new InvalidRequestException("El servicio de OCR no respondió. Intentá de nuevo en unos minutos.");
             }
             String errorMessage = ocrResponse.getErrorMessage();
             if (StringUtils.hasText(errorMessage)) {
-                throw new RuntimeException("Error del servicio OCR: " + errorMessage);
+                throw new InvalidRequestException("No se pudo leer el ticket: " + errorMessage);
             }
             if (ocrResponse.getParsedResults() == null || ocrResponse.getParsedResults().isEmpty()) {
                 return "";
@@ -78,7 +79,7 @@ public class OCRSpaceServiceImpl implements OCRSpaceService {
             throw ex;
         } catch (Exception e) {
             log.error("Error en OCRSpaceService", e);
-            throw new RuntimeException("Error al procesar el OCR.", e);
+            throw new InvalidRequestException("No se pudo procesar la imagen. Intentá con otra foto más nítida.");
         }
     }
 }

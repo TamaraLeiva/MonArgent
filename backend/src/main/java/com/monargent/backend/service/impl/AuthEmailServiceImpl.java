@@ -3,14 +3,12 @@ package com.monargent.backend.service.impl;
 import com.monargent.backend.enums.AuthEmailType;
 import com.monargent.backend.exception.EmailSendException;
 import com.monargent.backend.service.AuthEmailService;
-import jakarta.mail.internet.MimeMessage;
+import com.monargent.backend.service.mail.EmailTransport;
 import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,7 +16,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class AuthEmailServiceImpl implements AuthEmailService {
 
-    private final JavaMailSender mailSender;
+    private final EmailTransport emailTransport;
     private final Environment environment;
 
     @Value("${spring.mail.properties.mail.smtp.from:noreply@monargent.app}")
@@ -30,32 +28,27 @@ public class AuthEmailServiceImpl implements AuthEmailService {
     @Override
     public void sendAuthCodeEmail(String toEmail, String code, AuthEmailType type, int expirationMinutes) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(fromAddress);
-            helper.setTo(toEmail);
-            helper.setSubject(resolveSubject(type));
-            helper.setText(
-                buildPlainTextBody(code, type, expirationMinutes),
-                buildHtmlBody(code, type, expirationMinutes)
-            );
-            mailSender.send(message);
+            String subject = resolveSubject(type);
+            String plainText = buildPlainTextBody(code, type, expirationMinutes);
+            String htmlBody = buildHtmlBody(code, type, expirationMinutes);
+            emailTransport.send(toEmail, fromAddress, subject, plainText, htmlBody);
             log.info("Auth email ({}) sent to {}", type, toEmail);
         } catch (Exception ex) {
             boolean prodProfile = Arrays.stream(environment.getActiveProfiles()).anyMatch("prod"::equalsIgnoreCase);
+            String technicalReason = sanitizeTechnicalReason(ex.getMessage());
             if (exposeCodesInLog && !prodProfile) {
                 log.warn(
-                    "No se pudo enviar el correo a {} ({}). Código expuesto solo por flag dev: {}",
-                    toEmail,
+                    "No se pudo enviar correo de autenticación ({}). Motivo técnico: {}. Código expuesto solo por flag dev.",
                     type,
-                    code
+                    technicalReason
                 );
             } else {
-                log.warn("No se pudo enviar el correo a {} ({}).", toEmail, type);
+                log.warn("No se pudo enviar correo de autenticación ({}). Motivo técnico: {}", type, technicalReason);
             }
             log.debug("Detalle técnico de envío de correo omitido al cliente", ex);
             throw new EmailSendException(
-                "No se pudo enviar el correo de verificación. Verificá la configuración de correo o intentá más tarde."
+                "No se pudo enviar el correo de verificación. Verificá la configuración de correo o intentá más tarde.",
+                ex
             );
         }
     }
@@ -125,5 +118,19 @@ public class AuthEmailServiceImpl implements AuthEmailService {
             bodyContent,
             MonargentEmailTemplate.buildSecuritySection()
         );
+    }
+
+    private String sanitizeTechnicalReason(String message) {
+        if (message == null || message.isBlank()) {
+            return "sin detalle técnico";
+        }
+        String sanitized = message.replaceAll("[\\r\\n\\t]+", " ").replaceAll("\\s{2,}", " ").trim();
+        sanitized = sanitized.replaceAll("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}", "[redacted-email]");
+        sanitized = sanitized.replaceAll("(?i)(api[-_ ]?key|authorization|token)\\s*[:=]\\s*\\S+", "$1=[redacted]");
+        int maxLength = 500;
+        if (sanitized.length() > maxLength) {
+            return sanitized.substring(0, maxLength);
+        }
+        return sanitized;
     }
 }

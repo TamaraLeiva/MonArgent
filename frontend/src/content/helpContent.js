@@ -72,6 +72,13 @@ const ES = {
       'Eventos: también a los 5 y a los 3 días, y además unas 12 horas antes de la hora que cargaste.',
     ],
   },
+  recommendations: {
+    title: 'Recomendaciones',
+    body: [
+      'Acá ves sugerencias para mejorar tu mes según tus movimientos, límites y hábitos.',
+      'También podés definir límites por categoría: si te pasás, la app te avisa y eso impacta en tu salud financiera.',
+    ],
+  },
 };
 
 const EN = {
@@ -141,6 +148,13 @@ const EN = {
       'The app notifies you a few days before so you don\'t miss anything.',
       'Fixed expenses: you get a reminder 5 days before and another 3 days before.',
       'Events: also at 5 and 3 days, and about 12 hours before the time you set.',
+    ],
+  },
+  recommendations: {
+    title: 'Recommendations',
+    body: [
+      'Here you see suggestions to improve your month based on your transactions, limits, and habits.',
+      'You can also set category limits: if you go over, the app alerts you and it affects your financial health.',
     ],
   },
 };
