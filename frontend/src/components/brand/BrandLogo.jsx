@@ -1,4 +1,5 @@
 import React from 'react';
+import ThemedBrandImage from './ThemedBrandImage';
 
 const sizes = {
   sm: 'max-w-[200px]',
@@ -18,14 +19,14 @@ const BrandLogo = ({
   if (variant === 'icon') {
     return (
       <div className={`inline-flex flex-col items-center gap-2 ${className}`}>
-        <img
+        <ThemedBrandImage
           src="/monargent-icon.png"
           alt=""
           className={`${size === 'sm' ? 'h-10' : 'h-14'} w-auto object-contain bg-transparent`}
           aria-hidden
         />
         {showWordmark && (
-          <img
+          <ThemedBrandImage
             src="/monargent-wordmark.png"
             alt="MonArgent"
             className={`w-full ${widthClass} h-auto object-contain bg-transparent`}
@@ -38,7 +39,7 @@ const BrandLogo = ({
   return (
     <div className={`inline-flex flex-col items-center w-full ${className}`}>
       {showWordmark && (
-        <img
+        <ThemedBrandImage
           src="/monargent-wordmark.png"
           alt="MonArgent"
           className={`block w-full ${widthClass} h-auto object-contain bg-transparent -mb-2`}

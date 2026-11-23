@@ -16,7 +16,7 @@ const TIER_STYLE = {
 
 const TIER_DOT = {
   GOOD: 'bg-emerald-400',
-  MEDIUM: 'bg-amber-400',
+  MEDIUM: 'bg-amber-500 dark:bg-amber-400',
   LOW: 'bg-red-400',
 };
 
