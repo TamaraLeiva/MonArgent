@@ -199,7 +199,7 @@ public class RecommendationServiceImpl implements RecommendationService {
                     ? "Si reducís " + top.getKey() + " de $" + formatMoney(total)
                         + " a $" + formatMoney(suggested) + " (-20%, -$" + formatMoney(reduction) + ")"
                         + ", podés sumar +$" + formatMoney(reduction)
-                        + " a tu objetivo "" + goal.getTitle() + ""."
+                        + " a tu objetivo \"" + goal.getTitle() + "\"."
                     : "Tu mayor gasto es " + top.getKey() + " ($" + formatMoney(total)
                         + "). Si lo reducís un 20% (-$" + formatMoney(reduction) + "), te liberarías ese monto al mes.";
                 result.add(saveRecommendation(user, RecommendationType.GOAL, msg, reduction));
