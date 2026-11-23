@@ -5,6 +5,7 @@ import { usePreferences } from '../../context/PreferencesContext';
 import UserMenu from './UserMenu';
 import NotificationBell from './NotificationBell';
 import ProfileMoodFace from './ProfileMoodFace';
+import HeaderControls from './HeaderControls';
 import EditNameModal from '../ui/EditNameModal';
 import HelpTip from '../ui/HelpTip';
 import ThemedBrandImage from '../brand/ThemedBrandImage';
@@ -19,8 +20,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Pencil,
-  Sun,
-  Moon,
   ArrowLeftRight,
   ScanLine,
   Users,
@@ -179,7 +178,7 @@ const Layout = ({ children }) => {
       >
         {/* Logo + toggle */}
         <div
-          className={`md:h-[105px] flex items-center border-b border-[#234063]/50 overflow-hidden ${
+          className={`md:h-[53px] flex items-center border-b border-[#234063]/50 overflow-hidden ${
             expanded ? 'px-3 gap-2' : 'px-2 justify-center'
           }`}
         >
@@ -236,7 +235,7 @@ const Layout = ({ children }) => {
       {/* Main area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="h-[97px] md:h-[105px] flex-shrink-0 flex flex-col justify-center px-4 md:px-6 bg-[#081b33] border-b border-[#234063]/50 gap-2 py-2 md:py-3">
+        <header className="h-[97px] md:h-[53px] flex-shrink-0 flex flex-col justify-center px-4 md:px-6 bg-[#081b33] border-b border-[#234063]/50 gap-2 py-2">
           <div className="w-full flex items-center justify-between gap-3 min-w-0">
             <div className="min-w-0 flex-1">
               {isDashboard ? (
@@ -285,12 +284,24 @@ const Layout = ({ children }) => {
 
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <ProfileMoodFace />
+              <HeaderControls
+                className="hidden md:flex"
+                language={language}
+                currency={currency}
+                theme={theme}
+                fx={fx}
+                onToggleLanguage={toggleLanguage}
+                onToggleCurrency={toggleCurrency}
+                onToggleTheme={toggleTheme}
+                onRefreshFx={() => refreshFxRate()}
+                t={t}
+              />
               <NotificationBell />
               <UserMenu initials={getInitials()} email={user?.email || ''} onLogout={logout} />
             </div>
           </div>
 
-            <div className="w-full flex items-center justify-between gap-2 shrink-0">
+            <div className="w-full flex items-center justify-between gap-2 shrink-0 md:hidden">
               <button
                 type="button"
                 onClick={() => navigate(-1)}
@@ -302,45 +313,18 @@ const Layout = ({ children }) => {
                 <span className="text-xs font-medium hidden sm:inline">{t('layout.back')}</span>
               </button>
 
-              <div className="flex items-center justify-center gap-1.5 sm:gap-2 ml-auto">
-                <button
-                  type="button"
-                  onClick={toggleLanguage}
-                  className="min-w-[40px] h-9 px-2 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-amber-300 hover:bg-white/5 transition-colors"
-                  title={language === 'es' ? 'Switch to English' : 'Cambiar a Español'}
-                  aria-label={language === 'es' ? 'Switch to English' : 'Cambiar a Español'}
-                >
-                  {language === 'es' ? 'ES' : 'EN'}
-                </button>
-                <button
-                  type="button"
-                  onClick={toggleCurrency}
-                  className="min-w-[44px] h-9 px-2 rounded-lg text-[11px] font-semibold text-slate-300 hover:text-amber-300 hover:bg-white/5 transition-colors"
-                  title={currency === 'ARS' ? t('currency.dollar') : t('currency.peso')}
-                  aria-label={currency === 'ARS' ? t('currency.dollar') : t('currency.peso')}
-                >
-                  {currency === 'ARS' ? '$' : 'US$'}
-                </button>
-                {currency === 'USD' && (
-                  <button
-                    type="button"
-                    onClick={() => refreshFxRate()}
-                    className="inline-flex items-center h-9 px-2 rounded-lg text-[10px] text-slate-400 hover:text-amber-300 hover:bg-white/5 transition-colors whitespace-nowrap max-w-[140px] sm:max-w-none"
-                    title={fx?.error ? 'Sin cotización, mostrando ARS. Click para reintentar.' : `Cotización oficial DolarAPI${fx?.updatedAt ? ` · ${new Date(fx.updatedAt).toLocaleString('es-AR')}` : ''}. Click para actualizar.`}
-                  >
-                    {fx?.loading ? 'Cotizando...' : fx?.rate ? `US$1=$${Math.round(fx.rate).toLocaleString('es-AR')}` : 'Sin cotización'}
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={toggleTheme}
-                  className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-300 hover:text-amber-300 hover:bg-white/5 transition-colors"
-                  title={theme === 'dark' ? t('theme.light') : t('theme.dark')}
-                  aria-label={theme === 'dark' ? t('theme.light') : t('theme.dark')}
-                >
-                  {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                </button>
-              </div>
+              <HeaderControls
+                className="ml-auto"
+                language={language}
+                currency={currency}
+                theme={theme}
+                fx={fx}
+                onToggleLanguage={toggleLanguage}
+                onToggleCurrency={toggleCurrency}
+                onToggleTheme={toggleTheme}
+                onRefreshFx={() => refreshFxRate()}
+                t={t}
+              />
             </div>
         </header>
 
@@ -380,6 +364,20 @@ const Layout = ({ children }) => {
 
           </div>
         </nav>
+
+        {/* Desktop floating back button, outside the left sidebar */}
+        <button
+          type="button"
+          onClick={() => navigate(-1)}
+          className={`hidden md:inline-flex fixed bottom-6 z-30 items-center gap-1.5 h-9 px-3 rounded-lg text-slate-400 bg-[#0b2138]/80 border border-[#26415f] backdrop-blur hover:text-amber-300 hover:bg-white/5 transition-colors ${
+            expanded ? 'left-[15rem]' : 'left-[5rem]'
+          }`}
+          aria-label={t('layout.back')}
+          title={t('layout.back')}
+        >
+          <ArrowLeft size={18} />
+          <span className="text-xs font-medium">{t('layout.back')}</span>
+        </button>
       </div>
 
       <EditNameModal

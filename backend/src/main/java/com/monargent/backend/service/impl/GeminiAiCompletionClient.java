@@ -66,7 +66,8 @@ public class GeminiAiCompletionClient implements AiCompletionClient {
     private String completeWithParts(List<Map<String, Object>> parts) {
         if (geminiApiKey == null || geminiApiKey.isBlank()) {
             throw new AiServiceUnavailableException(
-                "La API de Gemini no está configurada. Agregá GEMINI_API_KEY en backend/.env"
+                "La API de Gemini no está configurada. Generá una clave en https://aistudio.google.com/apikey "
+                    + "y cargala como GEMINI_API_KEY en backend/.env (local) o en las Environment Variables de Render (producción)."
             );
         }
 

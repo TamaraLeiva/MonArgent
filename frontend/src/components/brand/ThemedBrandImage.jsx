@@ -14,7 +14,8 @@ function hexToRgb(hex) {
 
 /**
  * Brand PNGs use white letters that disappear on light backgrounds.
- * In light mode, replace near-white pixels with a brand blue and cache the result.
+ * In light mode, replace near-white pixels with a brand blue, drop the dark
+ * counters inside letters (o, A, g, e) and cache the result.
  */
 export default function ThemedBrandImage({ src, alt = '', className = '', blue = '#1e3a8a' }) {
   const { theme } = usePreferences();
@@ -45,10 +46,17 @@ export default function ThemedBrandImage({ src, alt = '', className = '', blue =
       const [rTarget, gTarget, bTarget] = hexToRgb(blue);
       const data = pixels.data;
       for (let i = 0; i < data.length; i += 4) {
-        if (data[i + 3] > 0 && data[i] > 232 && data[i + 1] > 232 && data[i + 2] > 232) {
+        if (data[i + 3] === 0) continue;
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        if (r > 232 && g > 232 && b > 232) {
           data[i] = rTarget;
           data[i + 1] = gTarget;
           data[i + 2] = bTarget;
+        } else if (r <= 90 && g <= 90 && b <= 90) {
+          // Dark counters/shadows look like filled holes on a light background.
+          data[i + 3] = 0;
         }
       }
       context.putImageData(pixels, 0, 0);

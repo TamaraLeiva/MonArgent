@@ -20,6 +20,12 @@ const TIER_DOT = {
   LOW: 'bg-red-400',
 };
 
+const MOOD_TEXT = {
+  HEALTHY: 'text-emerald-600 dark:text-emerald-400',
+  ON_TRACK: 'text-amber-600 dark:text-amber-300',
+  NEEDS_ATTENTION: 'text-red-600 dark:text-red-400',
+};
+
 export default function ProfileMoodFace() {
   const { t } = usePreferences();
   const ref = useRef(null);
@@ -94,13 +100,13 @@ export default function ProfileMoodFace() {
         aria-label={t('layout.financialHealth')}
       >
         <MoodFaceIcon level={mood.level} size={26} />
-        <span className="text-xs font-semibold text-amber-200/90 hidden sm:inline">
+        <span className={`text-xs font-semibold hidden sm:inline ${MOOD_TEXT[mood.level] || MOOD_TEXT.ON_TRACK}`}>
           {mood.score}/{mood.maxScore}
         </span>
       </button>
 
       {open && (
-        <div className="fixed inset-x-0 top-[97px] bottom-0 z-50 flex flex-col bg-[#0f2543] border-t border-[#284567] shadow-2xl md:left-auto md:right-6 md:top-[105px] md:bottom-auto md:w-[26rem] md:max-h-[75vh] md:rounded-b-xl md:border md:overflow-hidden">
+        <div className="fixed inset-x-0 top-[97px] bottom-0 z-50 flex flex-col bg-[#0f2543] border-t border-[#284567] shadow-2xl md:left-auto md:right-6 md:top-[53px] md:bottom-auto md:w-[26rem] md:max-h-[75vh] md:rounded-b-xl md:border md:overflow-hidden">
           <div className="px-4 py-3 border-b border-[#284567] shrink-0">
             <div className="flex items-center gap-3">
               <MoodFaceIcon level={mood.level} size={32} />
