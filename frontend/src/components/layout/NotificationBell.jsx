@@ -165,7 +165,7 @@ const NotificationBell = () => {
       </button>
 
       {open && (
-        <div className="fixed inset-x-0 top-16 bottom-0 z-50 flex flex-col bg-[#0f2543] border-t border-[#284567] shadow-2xl md:absolute md:inset-auto md:right-0 md:top-full md:mt-2 md:bottom-auto md:w-96 md:max-h-[70vh] md:rounded-xl md:border md:overflow-hidden">
+        <div className="fixed inset-x-0 top-[97px] bottom-0 z-50 flex flex-col bg-[#0f2543] border-t border-[#284567] shadow-2xl md:left-auto md:right-6 md:top-[105px] md:bottom-auto md:w-96 md:max-h-[70vh] md:rounded-b-xl md:border md:overflow-hidden">
           <div className="px-4 py-3 border-b border-[#284567] shrink-0 flex items-center justify-between gap-2">
             <p className="text-sm font-semibold text-slate-100">{t('notifications.title')}</p>
             {unreadOthers > 0 && (

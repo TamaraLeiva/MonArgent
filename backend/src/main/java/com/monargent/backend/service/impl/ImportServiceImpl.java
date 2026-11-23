@@ -13,6 +13,7 @@ import com.monargent.backend.enums.CategoryType;
 import com.monargent.backend.enums.ImportSourceType;
 import com.monargent.backend.enums.ReceiptStatus;
 import com.monargent.backend.enums.TransactionType;
+import com.monargent.backend.exception.AiServiceUnavailableException;
 import com.monargent.backend.exception.InvalidRequestException;
 import com.monargent.backend.exception.ResourceNotFoundException;
 import com.monargent.backend.repository.CategoryRepository;
@@ -31,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -127,21 +129,46 @@ public class ImportServiceImpl implements ImportService {
     }
 
     private List<ExtractedMovementDTO> extractFromOcr(MultipartFile file) {
-        String rawText = ocrSpaceService.extractRawText(file);
-        if (rawText == null || rawText.isBlank()) {
-            throw new InvalidRequestException("No se pudo extraer texto del documento");
+        String rawText = null;
+        try {
+            rawText = ocrSpaceService.extractRawText(file);
+        } catch (RuntimeException ex) {
+            log.warn("[OCR-DIAG] OCR provider failed, falling back to vision: {}", ex.getMessage());
         }
-        String trimmedText = trimOcrText(rawText);
-        log.info("[OCR-DIAG] OCR text length: {} chars (sent to AI: {} chars)",
-            rawText.length(), trimmedText.length());
-        List<ExtractedMovementDTO> movements = financialExtractionAIService.extractMovements(trimmedText);
-        log.info("[OCR-DIAG] Movements returned to preview after OCR+AI pipeline: {}", movements.size());
-        if (movements.isEmpty()) {
+
+        if (StringUtils.hasText(rawText)) {
+            String trimmedText = trimOcrText(rawText);
+            log.info("[OCR-DIAG] OCR text length: {} chars (sent to AI: {} chars)",
+                rawText.length(), trimmedText.length());
+            List<ExtractedMovementDTO> movements = financialExtractionAIService.extractMovements(trimmedText);
+            log.info("[OCR-DIAG] Movements returned to preview after OCR+AI pipeline: {}", movements.size());
+            if (!movements.isEmpty()) {
+                return movements;
+            }
+            log.warn("[OCR-DIAG] OCR text produced no movements, trying vision fallback");
+        }
+
+        List<ExtractedMovementDTO> visionMovements = extractFromVision(file);
+        if (visionMovements.isEmpty()) {
             throw new InvalidRequestException(
                 "No se detectaron productos en el ticket. Probá con una imagen más nítida o un recorte más cercano al detalle de compra."
             );
         }
-        return movements;
+        return visionMovements;
+    }
+
+    private List<ExtractedMovementDTO> extractFromVision(MultipartFile file) {
+        try {
+            String mimeType = file.getContentType();
+            List<ExtractedMovementDTO> movements =
+                financialExtractionAIService.extractMovementsFromImage(file.getBytes(), mimeType);
+            return movements == null ? List.of() : movements;
+        } catch (InvalidRequestException | AiServiceUnavailableException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            log.warn("[OCR-DIAG] Vision fallback failed: {}", ex.getMessage());
+            return List.of();
+        }
     }
 
     private String trimOcrText(String rawText) {

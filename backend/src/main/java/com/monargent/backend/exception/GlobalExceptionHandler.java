@@ -12,6 +12,8 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
@@ -111,6 +113,24 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("No encontrado")
                 .message("No se encontró el recurso solicitado.")
+                .path(request.getRequestURI())
+                .build());
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ApiErrorResponse> handleMultipart(MultipartException exception, HttpServletRequest request) {
+        boolean tooLarge = exception instanceof MaxUploadSizeExceededException;
+        HttpStatus status = tooLarge ? HttpStatus.PAYLOAD_TOO_LARGE : HttpStatus.BAD_REQUEST;
+        log.warn("Multipart error on {}: {}", request.getRequestURI(), exception.getMessage());
+        return ResponseEntity
+            .status(status)
+            .body(ApiErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(status.value())
+                .error(spanishStatusLabel(status))
+                .message(tooLarge
+                    ? "El archivo supera el límite de 5MB. Probá con una foto más liviana."
+                    : "No se pudo leer el archivo enviado. Intentá de nuevo.")
                 .path(request.getRequestURI())
                 .build());
     }

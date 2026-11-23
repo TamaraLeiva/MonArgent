@@ -84,13 +84,32 @@ class ImportServiceImplTest {
     }
 
     @Test
-    void extract_blankOcr_throws() throws Exception {
+    void extract_blankOcr_fallsBackToVision_andThrowsWhenEmpty() throws Exception {
         MockMultipartFile file = new MockMultipartFile(
             "file", "ticket.png", "image/png", validPngBytes());
         when(ocrSpaceService.extractRawText(file)).thenReturn("  ");
+        when(financialExtractionAIService.extractMovementsFromImage(any(), any())).thenReturn(List.of());
         assertThatThrownBy(() -> service.extract(file))
             .isInstanceOf(InvalidRequestException.class)
-            .hasMessage("No se pudo extraer texto del documento");
+            .hasMessageContaining("No se detectaron productos");
+    }
+
+    @Test
+    void extract_ocrFails_fallsBackToVision() throws Exception {
+        when(currentUserService.getCurrentUserId()).thenReturn(1L);
+        MockMultipartFile file = new MockMultipartFile(
+            "file", "ticket.jpg", "image/jpeg", validJpegBytes());
+        when(ocrSpaceService.extractRawText(file))
+            .thenThrow(new InvalidRequestException("OCR no disponible"));
+        ExtractedMovementDTO movement = ExtractedMovementDTO.builder()
+            .description("Leche").amount(new BigDecimal("10"))
+            .type(TransactionType.EXPENSE).build();
+        when(financialExtractionAIService.extractMovementsFromImage(any(), eq("image/jpeg")))
+            .thenReturn(List.of(movement));
+
+        ImportPreviewResponse preview = service.extract(file);
+        assertThat(preview.getMovements()).hasSize(1);
+        assertThat(preview.getMovements().get(0).getDescription()).isEqualTo("Leche");
     }
 
     @Test
@@ -99,6 +118,7 @@ class ImportServiceImplTest {
             "file", "ticket.pdf", "application/pdf", validPdfBytes());
         when(ocrSpaceService.extractRawText(file)).thenReturn("texto sin items");
         when(financialExtractionAIService.extractMovements(any())).thenReturn(List.of());
+        when(financialExtractionAIService.extractMovementsFromImage(any(), any())).thenReturn(List.of());
         assertThatThrownBy(() -> service.extract(file))
             .isInstanceOf(InvalidRequestException.class)
             .hasMessageContaining("No se detectaron productos");

@@ -31,7 +31,7 @@ import {
 const NAV_ITEMS = [
   { path: '/dashboard', labelKey: 'nav.home', icon: House },
   { path: '/transactions', label: 'Movimientos', icon: ArrowLeftRight },
-  { path: '/scan', label: 'Subir gasto', icon: ScanLine },
+  { path: '/scan', labelKey: 'nav.scan', icon: ScanLine },
   { path: '/groups', label: 'Grupos', icon: Users },
   { path: '/calendar', labelKey: 'nav.calendar', icon: Calendar },
   { path: '/goals', labelKey: 'nav.goals', icon: Target },
@@ -179,7 +179,7 @@ const Layout = ({ children }) => {
       >
         {/* Logo + toggle */}
         <div
-          className={`md:h-[104px] flex items-center border-b border-[#234063]/50 overflow-hidden ${
+          className={`md:h-[105px] flex items-center border-b border-[#234063]/50 overflow-hidden ${
             expanded ? 'px-3 gap-2' : 'px-2 justify-center'
           }`}
         >
@@ -236,7 +236,7 @@ const Layout = ({ children }) => {
       {/* Main area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="md:h-[104px] flex-shrink-0 flex flex-col justify-center px-4 md:px-6 bg-[#081b33] border-b border-[#234063]/50 gap-2 py-2 md:py-3">
+        <header className="h-[97px] md:h-[105px] flex-shrink-0 flex flex-col justify-center px-4 md:px-6 bg-[#081b33] border-b border-[#234063]/50 gap-2 py-2 md:py-3">
           <div className="w-full flex items-center justify-between gap-3 min-w-0">
             <div className="min-w-0 flex-1">
               {isDashboard ? (

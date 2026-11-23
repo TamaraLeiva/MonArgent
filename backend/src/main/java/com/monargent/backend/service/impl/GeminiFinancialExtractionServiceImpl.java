@@ -23,7 +23,7 @@ import org.springframework.util.StringUtils;
 public class GeminiFinancialExtractionServiceImpl implements FinancialExtractionAIService {
 
     private static final String SYSTEM_PROMPT = """
-        You extract line items from Argentine receipts and invoices given raw OCR text.
+        You extract line items from Argentine receipts and invoices, given raw OCR text or a photo/PDF of the document.
         Return ONLY valid JSON:
         {"movements":[{"type":"EXPENSE","description":"product","suggestedCategory":"Comida","amount":1234.56,"date":"2026-03-15"}]}
 
@@ -75,6 +75,29 @@ public class GeminiFinancialExtractionServiceImpl implements FinancialExtraction
 
         List<ExtractedMovementDTO> movements = parseAiResponse(response);
         log.info("[OCR-DIAG] Parsed transactions count: {}", movements.size());
+        return movements;
+    }
+
+    @Override
+    public List<ExtractedMovementDTO> extractMovementsFromImage(byte[] imageBytes, String mimeType) {
+        if (imageBytes == null || imageBytes.length == 0) {
+            log.warn("[OCR-DIAG] extractMovementsFromImage called with empty image");
+            return List.of();
+        }
+
+        String response = aiCompletionClient.completeWithImage(
+            SYSTEM_PROMPT,
+            "Extraé los ítems de compra de este ticket o factura.",
+            imageBytes,
+            mimeType
+        );
+        if (!StringUtils.hasText(response)) {
+            log.warn("[OCR-DIAG] Vision extraction returned empty response");
+            return List.of();
+        }
+
+        List<ExtractedMovementDTO> movements = parseAiResponse(response);
+        log.info("[OCR-DIAG] Vision parsed transactions count: {}", movements.size());
         return movements;
     }
 

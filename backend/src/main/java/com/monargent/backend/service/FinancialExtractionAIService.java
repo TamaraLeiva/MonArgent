@@ -6,4 +6,6 @@ import java.util.List;
 public interface FinancialExtractionAIService {
 
     List<ExtractedMovementDTO> extractMovements(String rawText);
+
+    List<ExtractedMovementDTO> extractMovementsFromImage(byte[] imageBytes, String mimeType);
 }

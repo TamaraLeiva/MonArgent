@@ -3,6 +3,7 @@ package com.monargent.backend.service.impl;
 import com.monargent.backend.exception.AiServiceUnavailableException;
 import com.monargent.backend.service.ai.AiCompletionClient;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -43,19 +44,38 @@ public class GeminiAiCompletionClient implements AiCompletionClient {
 
     @Override
     public String complete(String systemPrompt, String userPrompt) {
+        String combinedPrompt = systemPrompt + "\n\n" + userPrompt;
+        return completeWithParts(List.of(Map.of("text", combinedPrompt)));
+    }
+
+    @Override
+    public String completeWithImage(String systemPrompt, String userPrompt, byte[] imageBytes, String mimeType) {
+        if (imageBytes == null || imageBytes.length == 0) {
+            throw new AiServiceUnavailableException("La imagen está vacía, no se puede procesar con IA.");
+        }
+        String combinedPrompt = systemPrompt + "\n\n" + userPrompt;
+        Map<String, Object> imagePart = Map.of(
+            "inline_data", Map.of(
+                "mime_type", normalizeMimeType(mimeType),
+                "data", Base64.getEncoder().encodeToString(imageBytes)
+            )
+        );
+        return completeWithParts(List.of(Map.of("text", combinedPrompt), imagePart));
+    }
+
+    private String completeWithParts(List<Map<String, Object>> parts) {
         if (geminiApiKey == null || geminiApiKey.isBlank()) {
             throw new AiServiceUnavailableException(
                 "La API de Gemini no está configurada. Agregá GEMINI_API_KEY en backend/.env"
             );
         }
 
-        String combinedPrompt = systemPrompt + "\n\n" + userPrompt;
         String lastError = "sin detalle";
 
         for (String model : modelsToTry()) {
             for (int attempt = 1; attempt <= MAX_ATTEMPTS_PER_MODEL; attempt++) {
                 try {
-                    String response = callApi(model, combinedPrompt);
+                    String response = callApi(model, parts);
                     if (response != null && !response.isBlank()) {
                         if (!model.equals(geminiModel)) {
                             log.info("Gemini respondió usando modelo de respaldo: {}", model);
@@ -88,6 +108,17 @@ public class GeminiAiCompletionClient implements AiCompletionClient {
         );
     }
 
+    private String normalizeMimeType(String mimeType) {
+        if (mimeType == null || mimeType.isBlank()) {
+            return "image/jpeg";
+        }
+        String clean = mimeType.toLowerCase().trim();
+        if (clean.equals("image/jpg")) {
+            return "image/jpeg";
+        }
+        return clean;
+    }
+
     private List<String> modelsToTry() {
         Set<String> models = new LinkedHashSet<>();
         if (geminiModel != null && !geminiModel.isBlank()) {
@@ -97,14 +128,14 @@ public class GeminiAiCompletionClient implements AiCompletionClient {
         return new ArrayList<>(models);
     }
 
-    private String callApi(String model, String combinedPrompt) {
+    private String callApi(String model, List<Map<String, Object>> requestParts) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         // Keep the key out of the URL so it never lands in proxy or access logs.
         headers.set("x-goog-api-key", geminiApiKey);
 
         Map<String, Object> requestBody = Map.of(
-            "contents", List.of(Map.of("parts", List.of(Map.of("text", combinedPrompt)))),
+            "contents", List.of(Map.of("parts", requestParts)),
             "generationConfig", Map.of(
                 "temperature", 0,
                 "topP", 0.1,

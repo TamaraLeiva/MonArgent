@@ -120,7 +120,7 @@ const UserMenu = ({ initials, email, onLogout }) => {
             aria-hidden
           />
           <div
-            className="fixed left-0 right-0 top-14 bottom-0 z-50 flex flex-col bg-[#0f2543] border-t border-[#284567] shadow-2xl p-4 overflow-y-auto md:absolute md:inset-auto md:right-0 md:top-full md:mt-2 md:bottom-auto md:w-80 md:rounded-xl md:border md:max-h-[80vh]"
+            className="fixed left-0 right-0 top-[97px] bottom-0 z-50 flex flex-col bg-[#0f2543] border-t border-[#284567] shadow-2xl p-4 overflow-y-auto md:left-auto md:right-6 md:top-[105px] md:bottom-auto md:w-80 md:rounded-b-xl md:border md:max-h-[80vh]"
             style={{ paddingBottom: keyboardOffset ? `${keyboardOffset + 16}px` : undefined }}
           >
             <div className="flex justify-end mb-2 md:hidden">
