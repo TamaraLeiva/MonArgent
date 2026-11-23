@@ -21,9 +21,9 @@ const TIER_DOT = {
 };
 
 const MOOD_TEXT = {
-  HEALTHY: 'text-emerald-600 dark:text-emerald-400',
-  ON_TRACK: 'text-amber-600 dark:text-amber-300',
-  NEEDS_ATTENTION: 'text-red-600 dark:text-red-400',
+  HEALTHY: 'text-emerald-500 dark:text-emerald-400',
+  ON_TRACK: 'text-orange-500 dark:text-amber-400',
+  NEEDS_ATTENTION: 'text-red-500 dark:text-red-400',
 };
 
 export default function ProfileMoodFace() {

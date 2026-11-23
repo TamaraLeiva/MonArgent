@@ -305,12 +305,11 @@ const Layout = ({ children }) => {
               <button
                 type="button"
                 onClick={() => navigate(-1)}
-                className="inline-flex items-center gap-1.5 h-9 px-2 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-white/5 transition-colors"
+                className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-blue-700 dark:text-white hover:bg-blue-700/10 dark:hover:bg-white/10 transition-colors"
                 aria-label={t('layout.back')}
                 title={t('layout.back')}
               >
-                <ArrowLeft size={18} />
-                <span className="text-xs font-medium hidden sm:inline">{t('layout.back')}</span>
+                <ArrowLeft size={20} />
               </button>
 
               <HeaderControls
@@ -369,14 +368,13 @@ const Layout = ({ children }) => {
         <button
           type="button"
           onClick={() => navigate(-1)}
-          className={`hidden md:inline-flex fixed bottom-6 z-30 items-center gap-1.5 h-9 px-3 rounded-lg text-slate-400 bg-[#0b2138]/80 border border-[#26415f] backdrop-blur hover:text-amber-300 hover:bg-white/5 transition-colors ${
+          className={`hidden md:inline-flex fixed bottom-6 z-30 items-center justify-center w-10 h-10 rounded-full bg-[#0b2138]/80 border border-[#26415f] backdrop-blur text-blue-700 dark:text-white hover:bg-blue-700/10 dark:hover:bg-white/10 transition-colors ${
             expanded ? 'left-[15rem]' : 'left-[5rem]'
           }`}
           aria-label={t('layout.back')}
           title={t('layout.back')}
         >
-          <ArrowLeft size={18} />
-          <span className="text-xs font-medium">{t('layout.back')}</span>
+          <ArrowLeft size={20} />
         </button>
       </div>
 
