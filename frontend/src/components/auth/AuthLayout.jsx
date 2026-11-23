@@ -29,11 +29,11 @@ const AuthLayout = ({
 
   return (
     <div
-      className="min-h-screen min-h-[100dvh] bg-[#080f1a] text-slate-100 flex flex-col items-center justify-start sm:justify-center px-4 pt-5 sm:py-14 antialiased font-body relative overflow-x-hidden overflow-y-auto"
+      className="min-h-screen min-h-[100dvh] bg-[#080f1a] text-slate-100 flex flex-col items-center justify-center px-4 pt-20 pb-8 sm:py-14 antialiased font-body relative overflow-x-hidden overflow-y-auto"
       style={{
         paddingBottom: keyboardOffset
           ? `${keyboardOffset + 24}px`
-          : 'calc(1.5rem + env(safe-area-inset-bottom, 0px))',
+          : 'calc(2rem + env(safe-area-inset-bottom, 0px))',
       }}
     >
       <div className="fixed inset-0 z-0 pointer-events-none">
@@ -63,7 +63,7 @@ const AuthLayout = ({
       </div>
 
       <div className="relative z-10 w-full max-w-[420px] flex flex-col pt-[env(safe-area-inset-top,0px)]">
-        <div className={`text-center ${showBrand ? 'mb-4 sm:mb-5' : 'mb-8 sm:mb-10'}`}>
+        <div className={`text-center ${showBrand ? 'mb-8 sm:mb-6' : 'mb-8 sm:mb-10'}`}>
           {showBrand ? (
             <BrandLogo size="lg" showTagline />
           ) : (
